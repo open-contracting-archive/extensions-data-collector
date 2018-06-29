@@ -1,0 +1,8 @@
+-e git+https://github.com/open-contracting/extension_registry.py@8b06b6826c57d67ddddd38d062c7d52cfb065530#egg=ocdsextensionregistry
+## The following requirements were added by pip freeze:
+certifi==2018.4.16
+chardet==3.0.4
+idna==2.7
+pkg-resources==0.0.0
+requests==2.19.1
+urllib3==1.23

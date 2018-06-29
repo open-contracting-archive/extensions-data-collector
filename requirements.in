@@ -1,0 +1,2 @@
+-e git+https://github.com/open-contracting/extension_registry.py@0.0.4#egg=ocdsextensionregistry
+requests
