@@ -1,0 +1,3 @@
+[flake8]
+exclude = venv/, .ve/, output_dir
+max-line-length = 119
