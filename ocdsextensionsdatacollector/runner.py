@@ -4,6 +4,7 @@ import requests
 import zipfile
 import io
 import shutil
+import copy
 
 from ocdsextensionregistry import ExtensionRegistry
 
@@ -98,11 +99,26 @@ class Runner:
     def _add_information_from_download_to_output(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
-            extension_json = json.load(infile)
+            extension_json = self._normalise_extension_json(json.load(infile))
             self.out['extensions'][version.id]['versions'][version.version]['name'] = \
                 extension_json['name']
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
+
+    # This def is a candidate for pushing upstream to extension_registry.py
+    def _normalise_extension_json(self, in_extension_json):
+        out_extension_json = copy.deepcopy(in_extension_json)
+
+        if out_extension_json['name'] and isinstance(out_extension_json['name'], str):
+            out_extension_json['name'] = {
+                'en': out_extension_json['name']
+            }
+        if out_extension_json['description'] and isinstance(out_extension_json['description'], str):
+            out_extension_json['description'] = {
+                'en': out_extension_json['description']
+            }
+
+        return out_extension_json
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:

@@ -1,0 +1,6 @@
+{
+  "name": "Extension One",
+  "description": "The First Extension",
+  "compatibility": ">=1.1.0",
+  "dependencies": []
+}

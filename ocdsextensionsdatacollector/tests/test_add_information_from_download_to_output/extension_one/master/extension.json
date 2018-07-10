@@ -1,0 +1,10 @@
+{
+  "name": {
+    "en": "Extension One"
+  },
+  "description": {
+    "en": "The First Extension"
+  },
+  "compatibility": ">=1.1.0",
+  "dependencies": []
+}
