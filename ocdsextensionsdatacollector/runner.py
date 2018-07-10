@@ -65,8 +65,8 @@ class Runner:
         if os.path.isfile(version_output_file):
             # We already have this download on disk!
             # We have to decide what to do, download it again?
-            # For now, if it's core we don't download. Core is meant to be frozen once released.
-            if version.core:
+            # For now, if it's core (and not master) we don't download. We trust them not to be re-releasing versions.
+            if version.core and version.version != 'master':
                 return
             # If it's not core, we always download as we can't trust it won't have changed.
             os.remove(version_output_file)
