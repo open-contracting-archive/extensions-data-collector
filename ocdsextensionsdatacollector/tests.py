@@ -74,3 +74,31 @@ extension_one,2017-05-09,master,http://example.com/,http://example.com/"""
         'Extension One'
     assert runner.out['extensions']['extension_one']['versions']['master']['description']['en'] == \
         'The First Extension'
+
+
+def test_add_information_from_latest_version_to_extension():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        runner = ocdsextensionsdatacollector.runner.Runner(output_directory=tmpdir)
+        runner.out = {
+            'extensions': {
+                'extension_one': {
+                    'versions': {
+                        'master': {
+                            "name": {
+                                "en": "Extension One"
+                            },
+                            "description": {
+                                "en": "The First Extension"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        runner._add_information_from_latest_version_to_extension('extension_one')
+
+        assert runner.out['extensions']['extension_one']['name']['en'] == \
+            'Extension One'
+        assert runner.out['extensions']['extension_one']['description']['en'] == \
+            'The First Extension'

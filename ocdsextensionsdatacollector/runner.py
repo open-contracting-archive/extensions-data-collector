@@ -39,6 +39,9 @@ class Runner:
             self._download_version(version)
             self._add_information_from_download_to_output(version)
 
+        for extension_id in self.out['extensions'].keys():
+            self._add_information_from_latest_version_to_extension(extension_id)
+
         self._write_output()
 
     def _add_basic_info_to_output(self, version):
@@ -119,6 +122,21 @@ class Runner:
             }
 
         return out_extension_json
+
+    def _add_information_from_latest_version_to_extension(self, extension_id):
+        if 'master' in self.out['extensions'][extension_id]['versions'].keys():
+            self._add_information_from_version_to_extension(extension_id, 'master')
+        else:
+            # In theory, there may be an extension published without the 'master' version.
+            # It hasn't happened yet!
+            # When it does, we need to pick the latest version here and call the function with that.
+            raise Exception
+
+    def _add_information_from_version_to_extension(self, extension_id, version_id):
+        self.out['extensions'][extension_id]['name'] = \
+            self.out['extensions'][extension_id]['versions'][version_id]['name']
+        self.out['extensions'][extension_id]['description'] = \
+            self.out['extensions'][extension_id]['versions'][version_id]['description']
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:
