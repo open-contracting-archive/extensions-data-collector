@@ -10,10 +10,14 @@ from ocdsextensionregistry import ExtensionRegistry
 
 class Runner:
 
-    def __init__(self, sample=False):
-        self.output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'output_dir')
-        self.extensions_data = 'https://raw.githubusercontent.com/open-contracting/extension_registry/master/extensions.csv' # noqa
-        self.extension_versions_data = 'https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
+    def __init__(self, sample=False, output_directory=None,
+                 extensions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extensions.csv',  # noqa
+                 extension_versions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
+                ):
+        self.output_directory = output_directory or \
+                                os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'output_dir')
+        self.extensions_data = extensions_data
+        self.extension_versions_data = extension_versions_data
         self.sample = sample
         self.out = None
         if not os.path.isdir(self.output_directory):
