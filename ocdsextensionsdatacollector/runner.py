@@ -56,8 +56,8 @@ class Runner:
                 if name[-1:] == '/':
                     os.makedirs(os.path.join(version_output_dir, name[start:]))
                 else:
-                    with open(os.path.join(version_output_dir, name[start:]), "w") as outfile:
-                        outfile.write(version_zipfile.read(name).decode('utf-8'))
+                    with open(os.path.join(version_output_dir, name[start:]), "wb") as outfile:
+                        outfile.write(version_zipfile.read(name))
 
             # Part 3 : add information from extension to output
             with open(os.path.join(version_output_dir, "extension.json")) as infile:
