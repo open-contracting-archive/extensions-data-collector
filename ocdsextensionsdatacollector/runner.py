@@ -3,6 +3,7 @@ import json
 import requests
 import zipfile
 import io
+import shutil
 
 from ocdsextensionregistry import ExtensionRegistry
 
@@ -51,8 +52,24 @@ class Runner:
 
     def _download_version(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        os.makedirs(version_output_dir)
+        version_output_file = os.path.join(self.output_directory, version.id, version.version + '-status.json')
 
+        if os.path.isfile(version_output_file):
+            # We already have this download on disk!
+            # We have to decide what to do, download it again?
+            # For now, if it's core we don't download. Core is meant to be frozen once released.
+            if version.core:
+                return
+            # If it's not core, we always download as we can't trust it won't have changed.
+            os.remove(version_output_file)
+
+        # delete anything currently on disk - we think it's old
+        # (or it's possible it's a half complete download and we want to start again)
+        if os.path.isdir(version_output_dir):
+            shutil.rmtree(version_output_dir)
+
+        # download contents and save to disk
+        os.makedirs(version_output_dir)
         response = requests.get(version.download_url, allow_redirects=True)
         response.raise_for_status()
         version_zipfile = zipfile.ZipFile(io.BytesIO(response.content))
@@ -64,6 +81,15 @@ class Runner:
             else:
                 with open(os.path.join(version_output_dir, name[start:]), "wb") as outfile:
                     outfile.write(version_zipfile.read(name))
+
+        # Finally, write status file to indicate a successful download
+        out_status = {
+            # This is in case in the future we change how downloads work,
+            # and need to know if something on disk is from the old or new code.
+            'disk_data_layout_version': 1
+        }
+        with open(version_output_file, "w") as outfile:
+            json.dump(out_status, outfile, indent=4)
 
     def _add_information_from_download_to_output(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
