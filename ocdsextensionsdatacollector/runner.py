@@ -63,6 +63,7 @@ class Runner:
             'errors': [],
             'codelists': {},
             'docs': {},
+            'readme': None
         }
 
     def _download_version(self, version):
@@ -113,6 +114,7 @@ class Runner:
         self._add_information_from_download_to_output_release_package_schema(version)
         self._add_information_from_download_to_output_record_codelists(version)
         self._add_information_from_download_to_output_record_docs(version)
+        self._add_information_from_download_to_output_record_readme(version)
 
     def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -187,6 +189,18 @@ class Runner:
                     self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
                         "content": docfile.read()
                     }
+
+    def _add_information_from_download_to_output_record_readme(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        for name in ['README.md', 'readme.md']:
+            readme_file_name = os.path.join(version_output_dir, name)
+            if os.path.isfile(readme_file_name):
+                with open(readme_file_name, 'r') as readmefile:
+                    self.out['extensions'][version.id]['versions'][version.version]['readme'] = {
+                        "content": readmefile.read(),
+                        "type": "markdown"
+                    }
+                    return
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
