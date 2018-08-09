@@ -5,6 +5,7 @@ import zipfile
 import io
 import shutil
 import copy
+import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 
@@ -59,7 +60,8 @@ class Runner:
             'release_schema': None,
             'record_package_schema': None,
             'release_package_schema': None,
-            'errors': []
+            'errors': [],
+            'codelists': {}
         }
 
     def _download_version(self, version):
@@ -108,6 +110,7 @@ class Runner:
         self._add_information_from_download_to_output_release_schema(version)
         self._add_information_from_download_to_output_record_package_schema(version)
         self._add_information_from_download_to_output_release_package_schema(version)
+        self._add_information_from_download_to_output_record_codelists(version)
 
     def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -156,6 +159,21 @@ class Runner:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
                     })
+
+    def _add_information_from_download_to_output_record_codelists(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        codelists_dir_name = os.path.join(version_output_dir, "codelists")
+        if os.path.isdir(codelists_dir_name):
+            names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
+            for name in names:
+                data = {
+                    'rows': []
+                }
+                with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        data['rows'].append(row)
+                self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
