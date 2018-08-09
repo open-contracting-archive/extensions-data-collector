@@ -176,12 +176,18 @@ class Runner:
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
             for name in names:
                 data = {
-                    'rows': []
+                    'items': {}
                 }
                 with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
                     for row in reader:
-                        data['rows'].append(row)
+                        if "Code" in row:
+                            code = row["Code"]
+                            del row["Code"]
+                            if code:
+                                data['items'][code] = {
+                                    'en': row
+                                }
                 self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
 
     def _add_information_from_download_to_output_record_docs(self, version):
