@@ -63,7 +63,9 @@ class Runner:
             'errors': [],
             'codelists': {},
             'docs': {},
-            'readme': None
+            'readme': None,
+            'name': {},
+            'description': {}
         }
 
     def _download_version(self, version):
@@ -131,8 +133,9 @@ class Runner:
         if os.path.isfile(release_schema_filename):
             with open(release_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = \
-                        json.load(infile)
+                    self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
+                        "en": json.load(infile)
+                    }
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse release-schema.json: ' + error.msg
@@ -144,8 +147,9 @@ class Runner:
         if os.path.isfile(record_package_schema_filename):
             with open(record_package_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = \
-                        json.load(infile)
+                    self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = {
+                        "en": json.load(infile)
+                    }
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
@@ -157,8 +161,9 @@ class Runner:
         if os.path.isfile(release_package_schema_filename):
             with open(release_package_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = \
-                        json.load(infile)
+                    self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = {
+                        "en": json.load(infile)
+                    }
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
@@ -187,7 +192,9 @@ class Runner:
             for name in names:
                 with open(os.path.join(docs_dir_name, name), 'r') as docfile:
                     self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
-                        "content": docfile.read()
+                        "en": {
+                            "content": docfile.read()
+                        }
                     }
 
     def _add_information_from_download_to_output_record_readme(self, version):
@@ -197,8 +204,10 @@ class Runner:
             if os.path.isfile(readme_file_name):
                 with open(readme_file_name, 'r') as readmefile:
                     self.out['extensions'][version.id]['versions'][version.version]['readme'] = {
-                        "content": readmefile.read(),
-                        "type": "markdown"
+                        "en": {
+                            "content": readmefile.read(),
+                            "type": "markdown"
+                        }
                     }
                     return
 
