@@ -61,7 +61,8 @@ class Runner:
             'record_package_schema': None,
             'release_package_schema': None,
             'errors': [],
-            'codelists': {}
+            'codelists': {},
+            'docs': {},
         }
 
     def _download_version(self, version):
@@ -111,6 +112,7 @@ class Runner:
         self._add_information_from_download_to_output_record_package_schema(version)
         self._add_information_from_download_to_output_release_package_schema(version)
         self._add_information_from_download_to_output_record_codelists(version)
+        self._add_information_from_download_to_output_record_docs(version)
 
     def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -174,6 +176,17 @@ class Runner:
                     for row in reader:
                         data['rows'].append(row)
                 self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
+
+    def _add_information_from_download_to_output_record_docs(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        docs_dir_name = os.path.join(version_output_dir, "docs")
+        if os.path.isdir(docs_dir_name):
+            names = [f for f in os.listdir(docs_dir_name) if os.path.isfile(os.path.join(docs_dir_name, f))]
+            for name in names:
+                with open(os.path.join(docs_dir_name, name), 'r') as docfile:
+                    self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
+                        "content": docfile.read()
+                    }
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
