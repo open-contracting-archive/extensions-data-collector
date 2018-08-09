@@ -56,6 +56,10 @@ class Runner:
             'date': version.date,
             'base_url': version.base_url,
             'download_url': version.download_url,
+            'release_schema': None,
+            'record_package_schema': None,
+            'release_package_schema': None,
+            'errors': []
         }
 
     def _download_version(self, version):
@@ -107,6 +111,39 @@ class Runner:
                 extension_json['name']
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
+
+        release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
+        if os.path.isfile(release_schema_filename):
+            with open(release_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = \
+                        json.load(infile)
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse release-schema.json: ' + error.msg
+                    })
+
+        record_package_schema_filename = os.path.join(version_output_dir, "record-package-schema.json")
+        if os.path.isfile(record_package_schema_filename):
+            with open(record_package_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = \
+                        json.load(infile)
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
+                    })
+
+        release_package_schema_filename = os.path.join(version_output_dir, "release-package-schema.json")
+        if os.path.isfile(release_package_schema_filename):
+            with open(release_package_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = \
+                        json.load(infile)
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
+                    })
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
