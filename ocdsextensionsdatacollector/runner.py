@@ -104,6 +104,12 @@ class Runner:
             json.dump(out_status, outfile, indent=4)
 
     def _add_information_from_download_to_output(self, version):
+        self._add_information_from_download_to_output_extension_json(version)
+        self._add_information_from_download_to_output_release_schema(version)
+        self._add_information_from_download_to_output_record_package_schema(version)
+        self._add_information_from_download_to_output_release_package_schema(version)
+
+    def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile))
@@ -112,6 +118,8 @@ class Runner:
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
 
+    def _add_information_from_download_to_output_release_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
             with open(release_schema_filename) as infile:
@@ -123,6 +131,8 @@ class Runner:
                         'message': 'Error while trying to parse release-schema.json: ' + error.msg
                     })
 
+    def _add_information_from_download_to_output_record_package_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         record_package_schema_filename = os.path.join(version_output_dir, "record-package-schema.json")
         if os.path.isfile(record_package_schema_filename):
             with open(record_package_schema_filename) as infile:
@@ -134,6 +144,8 @@ class Runner:
                         'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
                     })
 
+    def _add_information_from_download_to_output_release_package_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         release_package_schema_filename = os.path.join(version_output_dir, "release-package-schema.json")
         if os.path.isfile(release_package_schema_filename):
             with open(release_package_schema_filename) as infile:
