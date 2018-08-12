@@ -5,6 +5,7 @@ import zipfile
 import io
 import shutil
 import copy
+import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 
@@ -56,6 +57,15 @@ class Runner:
             'date': version.date,
             'base_url': version.base_url,
             'download_url': version.download_url,
+            'release_schema': None,
+            'record_package_schema': None,
+            'release_package_schema': None,
+            'errors': [],
+            'codelists': {},
+            'docs': {},
+            'readme': None,
+            'name': {},
+            'description': {}
         }
 
     def _download_version(self, version):
@@ -100,6 +110,15 @@ class Runner:
             json.dump(out_status, outfile, indent=4)
 
     def _add_information_from_download_to_output(self, version):
+        self._add_information_from_download_to_output_extension_json(version)
+        self._add_information_from_download_to_output_release_schema(version)
+        self._add_information_from_download_to_output_record_package_schema(version)
+        self._add_information_from_download_to_output_release_package_schema(version)
+        self._add_information_from_download_to_output_record_codelists(version)
+        self._add_information_from_download_to_output_record_docs(version)
+        self._add_information_from_download_to_output_record_readme(version)
+
+    def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile))
@@ -107,6 +126,96 @@ class Runner:
                 extension_json['name']
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
+
+    def _add_information_from_download_to_output_release_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
+        if os.path.isfile(release_schema_filename):
+            with open(release_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
+                        "en": json.load(infile)
+                    }
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse release-schema.json: ' + error.msg
+                    })
+
+    def _add_information_from_download_to_output_record_package_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        record_package_schema_filename = os.path.join(version_output_dir, "record-package-schema.json")
+        if os.path.isfile(record_package_schema_filename):
+            with open(record_package_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = {
+                        "en": json.load(infile)
+                    }
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
+                    })
+
+    def _add_information_from_download_to_output_release_package_schema(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        release_package_schema_filename = os.path.join(version_output_dir, "release-package-schema.json")
+        if os.path.isfile(release_package_schema_filename):
+            with open(release_package_schema_filename) as infile:
+                try:
+                    self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = {
+                        "en": json.load(infile)
+                    }
+                except json.decoder.JSONDecodeError as error:
+                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                        'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
+                    })
+
+    def _add_information_from_download_to_output_record_codelists(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        codelists_dir_name = os.path.join(version_output_dir, "codelists")
+        if os.path.isdir(codelists_dir_name):
+            names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
+            for name in names:
+                data = {
+                    'items': {}
+                }
+                with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        if "Code" in row:
+                            code = row["Code"]
+                            del row["Code"]
+                            if code:
+                                data['items'][code] = {
+                                    'en': row
+                                }
+                self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
+
+    def _add_information_from_download_to_output_record_docs(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        docs_dir_name = os.path.join(version_output_dir, "docs")
+        if os.path.isdir(docs_dir_name):
+            names = [f for f in os.listdir(docs_dir_name) if os.path.isfile(os.path.join(docs_dir_name, f))]
+            for name in names:
+                with open(os.path.join(docs_dir_name, name), 'r') as docfile:
+                    self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
+                        "en": {
+                            "content": docfile.read()
+                        }
+                    }
+
+    def _add_information_from_download_to_output_record_readme(self, version):
+        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        for name in ['README.md', 'readme.md']:
+            readme_file_name = os.path.join(version_output_dir, name)
+            if os.path.isfile(readme_file_name):
+                with open(readme_file_name, 'r') as readmefile:
+                    self.out['extensions'][version.id]['versions'][version.version]['readme'] = {
+                        "en": {
+                            "content": readmefile.read(),
+                            "type": "markdown"
+                        }
+                    }
+                    return
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
