@@ -9,6 +9,8 @@ import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 
+STANDARD_COMPATIBILITY_VERSIONS = ['1.0', '1.1']
+
 
 class Runner:
 
@@ -71,8 +73,11 @@ class Runner:
             'docs': {},
             'readme': None,
             'name': {},
-            'description': {}
+            'description': {},
+            'standard_compatibility': {}
         }
+        for standard_version in STANDARD_COMPATIBILITY_VERSIONS:
+            self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False # noqa
 
     def _download_version(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -132,6 +137,10 @@ class Runner:
                 extension_json['name']
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
+            for c_v in STANDARD_COMPATIBILITY_VERSIONS:
+                if c_v in extension_json['compatibility']:
+                    self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][c_v] = \
+                        True
 
     def _add_information_from_download_to_output_release_schema(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -235,6 +244,9 @@ class Runner:
             out_extension_json['description'] = {
                 'en': out_extension_json['description']
             }
+        if 'compatibility' not in out_extension_json or isinstance(out_extension_json['compatibility'], str):
+            # Historical data - Assume it's compatible with earliest version that had extensions.
+            out_extension_json['compatibility'] = ['1.1']
 
         return out_extension_json
 
