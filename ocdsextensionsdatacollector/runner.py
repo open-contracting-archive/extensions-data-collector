@@ -41,7 +41,10 @@ class Runner:
             self._add_information_from_download_to_output(version)
 
         for extension_id in self.out['extensions'].keys():
-            self._add_information_from_latest_version_to_extension(extension_id)
+            self._add_information_from_version_to_extension(
+                extension_id,
+                self._get_main_version_for_extension(extension_id)
+            )
 
         self._write_output()
 
@@ -50,7 +53,10 @@ class Runner:
             self.out['extensions'][version.id] = {
                 'versions': {},
                 'category': version.category,
-                'core': version.core
+                'core': version.core,
+                'main_version': None,
+                'name': {},
+                'description': {}
             }
 
         self.out['extensions'][version.id]['versions'][version.version] = {
@@ -232,9 +238,9 @@ class Runner:
 
         return out_extension_json
 
-    def _add_information_from_latest_version_to_extension(self, extension_id):
+    def _get_main_version_for_extension(self, extension_id):
         if 'master' in self.out['extensions'][extension_id]['versions'].keys():
-            self._add_information_from_version_to_extension(extension_id, 'master')
+            return 'master'
         else:
             # In theory, there may be an extension published without the 'master' version.
             # It hasn't happened yet!
@@ -242,6 +248,7 @@ class Runner:
             raise Exception
 
     def _add_information_from_version_to_extension(self, extension_id, version_id):
+        self.out['extensions'][extension_id]['main_version'] = version_id
         self.out['extensions'][extension_id]['name'] = \
             self.out['extensions'][extension_id]['versions'][version_id]['name']
         self.out['extensions'][extension_id]['description'] = \

@@ -96,7 +96,12 @@ def test_add_information_from_latest_version_to_extension():
             }
         }
 
-        runner._add_information_from_latest_version_to_extension('extension_one')
+        assert runner._get_main_version_for_extension('extension_one') == "master"
+
+        runner._add_information_from_version_to_extension(
+            'extension_one',
+            runner._get_main_version_for_extension('extension_one')
+        )
 
         assert runner.out['extensions']['extension_one']['name']['en'] == \
             'Extension One'
