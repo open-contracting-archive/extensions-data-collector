@@ -47,6 +47,7 @@ class Runner:
                 extension_id,
                 self._get_main_version_for_extension(extension_id)
             )
+            self._add_version_key_lists_to_extension(extension_id)
 
         self._write_output()
 
@@ -58,7 +59,8 @@ class Runner:
                 'core': version.core,
                 'main_version': None,
                 'name': {},
-                'description': {}
+                'description': {},
+                'list_version_keys_all': []
             }
 
         self.out['extensions'][version.id]['versions'][version.version] = {
@@ -265,6 +267,14 @@ class Runner:
             self.out['extensions'][extension_id]['versions'][version_id]['name']
         self.out['extensions'][extension_id]['description'] = \
             self.out['extensions'][extension_id]['versions'][version_id]['description']
+
+    def _add_version_key_lists_to_extension(self, extension_id):
+        all_version_keys = list(self.out['extensions'][extension_id]['versions'].keys())
+
+        all_version_keys.sort()
+        # TODO sort all_version_keys better here
+
+        self.out['extensions'][extension_id]['list_version_keys_all'] = all_version_keys
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:
