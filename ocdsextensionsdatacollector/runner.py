@@ -9,7 +9,7 @@ import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 
-STANDARD_COMPATIBILITY_VERSIONS = ['1.0', '1.1']
+STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
 
 class Runner:
