@@ -9,6 +9,8 @@ import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 
+STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
+
 
 class Runner:
 
@@ -41,7 +43,11 @@ class Runner:
             self._add_information_from_download_to_output(version)
 
         for extension_id in self.out['extensions'].keys():
-            self._add_information_from_latest_version_to_extension(extension_id)
+            self._add_information_from_version_to_extension(
+                extension_id,
+                self._get_main_version_for_extension(extension_id)
+            )
+            self._add_version_key_lists_to_extension(extension_id)
 
         self._write_output()
 
@@ -50,7 +56,11 @@ class Runner:
             self.out['extensions'][version.id] = {
                 'versions': {},
                 'category': version.category,
-                'core': version.core
+                'core': version.core,
+                'main_version': None,
+                'name': {},
+                'description': {},
+                'list_version_keys_all': []
             }
 
         self.out['extensions'][version.id]['versions'][version.version] = {
@@ -65,8 +75,11 @@ class Runner:
             'docs': {},
             'readme': None,
             'name': {},
-            'description': {}
+            'description': {},
+            'standard_compatibility': {}
         }
+        for standard_version in STANDARD_COMPATIBILITY_VERSIONS:
+            self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False # noqa
 
     def _download_version(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -126,6 +139,10 @@ class Runner:
                 extension_json['name']
             self.out['extensions'][version.id]['versions'][version.version]['description'] = \
                 extension_json['description']
+            for c_v in STANDARD_COMPATIBILITY_VERSIONS:
+                if c_v in extension_json['compatibility']:
+                    self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][c_v] = \
+                        True
 
     def _add_information_from_download_to_output_release_schema(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
@@ -229,12 +246,15 @@ class Runner:
             out_extension_json['description'] = {
                 'en': out_extension_json['description']
             }
+        if 'compatibility' not in out_extension_json or isinstance(out_extension_json['compatibility'], str):
+            # Historical data - Assume it's compatible with earliest version that had extensions.
+            out_extension_json['compatibility'] = ['1.1']
 
         return out_extension_json
 
-    def _add_information_from_latest_version_to_extension(self, extension_id):
+    def _get_main_version_for_extension(self, extension_id):
         if 'master' in self.out['extensions'][extension_id]['versions'].keys():
-            self._add_information_from_version_to_extension(extension_id, 'master')
+            return 'master'
         else:
             # In theory, there may be an extension published without the 'master' version.
             # It hasn't happened yet!
@@ -242,10 +262,19 @@ class Runner:
             raise Exception
 
     def _add_information_from_version_to_extension(self, extension_id, version_id):
+        self.out['extensions'][extension_id]['main_version'] = version_id
         self.out['extensions'][extension_id]['name'] = \
             self.out['extensions'][extension_id]['versions'][version_id]['name']
         self.out['extensions'][extension_id]['description'] = \
             self.out['extensions'][extension_id]['versions'][version_id]['description']
+
+    def _add_version_key_lists_to_extension(self, extension_id):
+        all_version_keys = list(self.out['extensions'][extension_id]['versions'].keys())
+
+        all_version_keys.sort()
+        # TODO sort all_version_keys better here
+
+        self.out['extensions'][extension_id]['list_version_keys_all'] = all_version_keys
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:

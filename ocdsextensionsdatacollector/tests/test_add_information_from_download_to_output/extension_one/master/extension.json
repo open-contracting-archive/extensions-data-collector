@@ -5,6 +5,6 @@
   "description": {
     "en": "The First Extension"
   },
-  "compatibility": ">=1.1.0",
+  "compatibility": ["1.1"],
   "dependencies": []
 }
