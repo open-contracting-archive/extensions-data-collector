@@ -45,7 +45,7 @@ def codelists_po(output_dir, extension_id, version):
                             auto_comments=comments, context=context)
 
         except CSVError as e:
-            # TODO: fix this upstream in documentation-support or 
+            # TODO: fix this upstream in documentation-support or
             #       rewrite codelist csvs as part of data-collector download process
             print('Could not parse CSV for %s/%s: %s' %
                   (extension_id, version, e))
@@ -62,10 +62,15 @@ def codelists_po(output_dir, extension_id, version):
 
 
 def schema_po(output_dir, extension_id, version):
-    schema_file = os.path.join(output_dir, extension_id, version, 'release-schema.json')
-    po_dir = os.path.join(output_dir, locale_dir, en_dir, extension_id, version)
+    # TODO: check if they're always called release-schema.json. Maybe not?
+    #       Shoudln't hard code this. Can there be more than one?
+    schema_file = os.path.join(
+        output_dir, extension_id, version, 'release-schema.json')
+    po_dir = os.path.join(output_dir, locale_dir,
+                          en_dir, extension_id, version)
     if not os.path.isdir(po_dir):
         os.makedirs(po_dir, exist_ok=True)
+    
     catalog = Catalog(project=None,
                       version=None,
                       msgid_bugs_address=None,
@@ -81,13 +86,40 @@ def schema_po(output_dir, extension_id, version):
     output_file = os.path.join(po_dir, 'release-schema.po')
     with open(output_file, 'wb') as outfile:
 
-            write_po(outfile, catalog, width=76,
-                     no_location=False,
-                     omit_header=False,
-                     sort_output=False,
-                     sort_by_file=True,
-                     include_lineno=True)
+        write_po(outfile, catalog, width=76,
+                 no_location=False,
+                 omit_header=False,
+                 sort_output=False,
+                 sort_by_file=True,
+                 include_lineno=True)
 
-def extension_po():
-    # 'extension.json'
-    pass
+
+def extension_po(output_dir, extension_id, version):
+    extension_file = os.path.join(
+        output_dir, extension_id, version, 'extension.json')
+    po_dir = os.path.join(output_dir, locale_dir,
+                          en_dir, extension_id, version)
+    if not os.path.isdir(po_dir):
+        os.makedirs(po_dir, exist_ok=True)
+    
+    catalog = Catalog(project=None,
+                      version=None,
+                      msgid_bugs_address=None,
+                      copyright_holder=None,
+                      charset='utf-8')
+
+    messages = extract_from_file(extract_extension_meta, extension_file)
+
+    for lineno, message, comments, context in messages:
+        catalog.add(message, None, [(extension_file, lineno)],
+                    auto_comments=comments, context=context)
+
+    output_file = os.path.join(po_dir, 'extension.po')
+    with open(output_file, 'wb') as outfile:
+
+        write_po(outfile, catalog, width=76,
+                 no_location=False,
+                 omit_header=False,
+                 sort_output=False,
+                 sort_by_file=True,
+                 include_lineno=True)

@@ -8,7 +8,7 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -134,6 +134,10 @@ class Runner:
 
     def _add_information_from_download_to_output_extension_json(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+
+        # Make EN .po files
+        extension_po(self.output_directory, version.id, version.version)
+
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile))
             self.out['extensions'][version.id]['versions'][version.version]['name'] = \
