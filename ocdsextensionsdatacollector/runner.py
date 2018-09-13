@@ -8,7 +8,7 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -149,6 +149,10 @@ class Runner:
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
+
+            # Make EN .po files
+            schema_po(self.output_directory, version.id, version.version)
+
             with open(release_schema_filename) as infile:
                 try:
                     self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
