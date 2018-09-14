@@ -8,7 +8,7 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -42,6 +42,8 @@ class Runner:
             self._add_basic_info_to_output(version)
             self._download_version(version)
             self._add_information_from_download_to_output(version)
+
+        docs_po(self.output_directory)
 
         for extension_id in self.out['extensions'].keys():
             self._add_information_from_version_to_extension(
@@ -199,7 +201,7 @@ class Runner:
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         codelists_dir_name = os.path.join(version_output_dir, "codelists")
         if os.path.isdir(codelists_dir_name):
-            
+
             # Make EN .po files
             codelists_po(self.output_directory, version.id, version.version)
 

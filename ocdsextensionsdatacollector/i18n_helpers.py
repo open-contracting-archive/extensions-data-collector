@@ -1,9 +1,14 @@
 import os
 from _csv import Error as CSVError
+import shutil
+import glob
+from contextlib import redirect_stdout, redirect_stderr
+import io
 
 from babel.messages.catalog import Catalog
 from babel.messages.extract import extract_from_dir, extract_from_file
 from babel.messages.pofile import write_po
+import sphinx
 
 from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_schema, extract_extension_meta
 
@@ -123,3 +128,37 @@ def extension_po(output_dir, extension_id, version):
                  sort_output=False,
                  sort_by_file=True,
                  include_lineno=True)
+
+def docs_po(output_directory):
+    current_directory = os.path.dirname(os.path.realpath(__file__))
+    temp_i18n_directory = os.path.join(output_directory, 'temp_i18n')
+    en_locale_directory = os.path.join(output_directory, locale_dir, en_dir)
+    sphinx_extraction_logs = os.path.join(output_directory, 'sphinx_extraction_logs.txt')
+
+    conf_directory = os.path.join(current_directory, 'sphinx_config')
+
+    # have to make index file for sphinx to work
+    index_file = os.path.join(conf_directory, 'index.md')
+    shutil.copy(index_file, output_directory)
+
+    #sphinx already prints output to a file, this just stops output to console
+    fake_file = io.StringIO()
+    with redirect_stdout(fake_file), redirect_stderr(fake_file):
+        sphinx.build_main(['sphinx-build', '-b', 'gettext',
+                           '-a', # rebuild fully each time
+                           '-w', sphinx_extraction_logs, # log output file
+                           '-c', conf_directory,
+                           output_directory, temp_i18n_directory])
+
+    os.remove(os.path.join(output_directory, 'index.md'))
+    os.remove(os.path.join(temp_i18n_directory, 'index.pot'))
+
+    for full_file_path in glob.glob(temp_i18n_directory + '/**/README.pot', recursive=True):
+        new_relative_path = full_file_path[len(temp_i18n_directory) + 1:].replace('README.pot', 'docs.po')
+        new_path = os.path.join(en_locale_directory, new_relative_path)
+        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        shutil.copy(full_file_path, new_path)
+
+    shutil.rmtree(temp_i18n_directory)
+
+
