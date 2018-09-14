@@ -42,11 +42,18 @@ class Runner:
             self._add_basic_info_to_output(version)
             self._download_version(version)
             self._add_information_from_download_to_output(version)
-
-            upload_po_files(self.output_directory, version.id, version.version)
-            # delete_tx_resources(self.output_directory, version.id, version.version)
         
         docs_po(self.output_directory)
+
+        # Do translations (unless --sample)
+        # A second loop to catch the docs .po files too. Better way?
+        if not self.sample:
+            for version in registry:
+                # Upload EN files to transifex
+                upload_po_files(self.output_directory, version.id, version.version)
+                # Download translations
+                # Add translations to self.out
+
 
         for extension_id in self.out['extensions'].keys():
             self._add_information_from_version_to_extension(
