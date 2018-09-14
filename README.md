@@ -21,3 +21,18 @@ To run:
 You can also just run a sample:
 
     python cli.py --sample
+
+## Disk space
+
+The disk space used is the directory "output_dir" in the code folder.
+
+This can be changed by passing the output_directory option to the Runner class or passing the 
+--outputdir argument to cli.py.
+
+    python cli.py --outputdir CUSTOMout --sample
+
+## Output
+
+The important output is a data JSON file called "data.json". This will be on disk in the directory specfied after running.
+
+This is used by websites like https://github.com/open-contracting/extension-explorer
