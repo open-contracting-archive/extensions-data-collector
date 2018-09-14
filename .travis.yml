@@ -1,7 +1,4 @@
 language: python
-env:
-  global:
-    - TX_API_KEY=thisisnotakey
 python:
     - "3.5"
 install:

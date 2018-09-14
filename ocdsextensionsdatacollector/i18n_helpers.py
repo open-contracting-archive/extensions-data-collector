@@ -1,5 +1,5 @@
 import os
-from decouple import config
+from decouple import config, UndefinedValueError
 from _csv import Error as CSVError
 import shutil
 import glob
@@ -26,7 +26,11 @@ en_dir = 'en'
 
 tx_endpoint = 'https://www.transifex.com'
 tx_project = 'ocds-extensions'
-TX_API_KEY = config('TX_API_KEY')
+
+try:
+    TX_API_KEY = config('TX_API_KEY')
+except UndefinedValueError:
+    TX_API_KEY = None
 
 
 def codelists_po(output_dir, extension_id, version):
@@ -181,6 +185,11 @@ def get_resource_name(extension, version, po_file):
 
 
 def send_to_transifex(po_file, resource_slug, resource_name):
+
+    if not TX_API_KEY:
+        print('No Transifex API key - please set TX_API_KEY in .env')
+        return
+
     tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
     if tx_api.project_exists(tx_project):
         try:
