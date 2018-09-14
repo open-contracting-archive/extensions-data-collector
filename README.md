@@ -11,6 +11,11 @@ This python package will be reused by other code, such as the new extensions web
 
   *  The Python packages described as normal in requirements.txt
   *  Some disk space to write files to
+  *  A Transifex API key with write access to the ocds-extensions project.
+
+## Config
+
+Save `.env.tmpl` as `.env` and add your Transifex API key
 
 ## To Run
 
