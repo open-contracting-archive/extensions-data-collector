@@ -8,7 +8,7 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po, upload_po_files
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -43,6 +43,9 @@ class Runner:
             self._download_version(version)
             self._add_information_from_download_to_output(version)
 
+            upload_po_files(self.output_directory, version.id, version.version)
+            # delete_tx_resources(self.output_directory, version.id, version.version)
+        
         docs_po(self.output_directory)
 
         for extension_id in self.out['extensions'].keys():
@@ -204,6 +207,13 @@ class Runner:
 
             # Make EN .po files
             codelists_po(self.output_directory, version.id, version.version)
+            # Send EN to transifex
+
+            # Fetch other langs from transifex
+
+            # Translate codelists (ocdsdocumentationsupport.translate_codelists)
+
+            # Inject translations into self.out
 
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
             for name in names:
