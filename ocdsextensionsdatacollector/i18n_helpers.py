@@ -22,7 +22,7 @@ method_map = [
 ]
 
 locale_dir = 'locale'
-en_dir = 'en'
+en_dir = 'en/LC_MESSAGES'
 
 tx_endpoint = 'https://www.transifex.com'
 tx_project = 'ocds-extensions'
@@ -145,7 +145,8 @@ def docs_po(output_directory):
     current_directory = os.path.dirname(os.path.realpath(__file__))
     temp_i18n_directory = os.path.join(output_directory, 'temp_i18n')
     en_locale_directory = os.path.join(output_directory, locale_dir, en_dir)
-    sphinx_extraction_logs = os.path.join(output_directory, 'sphinx_extraction_logs.txt')
+    sphinx_extraction_logs = os.path.join(
+        output_directory, 'sphinx_extraction_logs.txt')
 
     conf_directory = os.path.join(current_directory, 'sphinx_config')
 
@@ -153,12 +154,12 @@ def docs_po(output_directory):
     index_file = os.path.join(conf_directory, 'index.md')
     shutil.copy(index_file, output_directory)
 
-    #sphinx already prints output to a file, this just stops output to console
+    # sphinx already prints output to a file, this just stops output to console
     fake_file = io.StringIO()
     with redirect_stdout(fake_file), redirect_stderr(fake_file):
         sphinx.build_main(['sphinx-build', '-b', 'gettext',
-                           '-a', # rebuild fully each time
-                           '-w', sphinx_extraction_logs, # log output file
+                           '-a',  # rebuild fully each time
+                           '-w', sphinx_extraction_logs,  # log output file
                            '-c', conf_directory,
                            output_directory, temp_i18n_directory])
 
@@ -166,7 +167,8 @@ def docs_po(output_directory):
     os.remove(os.path.join(temp_i18n_directory, 'index.pot'))
 
     for full_file_path in glob.glob(temp_i18n_directory + '/**/README.pot', recursive=True):
-        new_relative_path = full_file_path[len(temp_i18n_directory) + 1:].replace('README.pot', 'docs.po')
+        new_relative_path = full_file_path[len(
+            temp_i18n_directory) + 1:].replace('README.pot', 'docs.po')
         new_path = os.path.join(en_locale_directory, new_relative_path)
         os.makedirs(os.path.dirname(new_path), exist_ok=True)
         shutil.copy(full_file_path, new_path)
@@ -174,9 +176,9 @@ def docs_po(output_directory):
     shutil.rmtree(temp_i18n_directory)
 
 
-
 def make_resource_slug(extension, version, po_file):
-    version = version.replace('.', '-') # slugify strips '.' which garbles version numbers
+    # slugify strips '.' which garbles version numbers
+    version = version.replace('.', '-')
     return slugify('{}-{}-{}'.format(extension, version, po_file.replace('.po', '')))
 
 
@@ -194,16 +196,16 @@ def send_to_transifex(po_file, resource_slug, resource_name):
     if tx_api.project_exists(tx_project):
         try:
             response = tx_api.new_resource(
-                                        tx_project, 
-                                        po_file, 
-                                        resource_slug=resource_slug, 
-                                        resource_name=resource_name)
+                tx_project,
+                po_file,
+                resource_slug=resource_slug,
+                resource_name=resource_name)
             print('Creating {} on transifex'.format(resource_name))
         except TransifexAPIException:
             response = tx_api.update_source_translation(
-                                        tx_project, 
-                                        resource_slug, 
-                                        po_file)
+                tx_project,
+                resource_slug,
+                po_file)
             print('Updating {} on transifex'.format(resource_name))
 
 
@@ -234,4 +236,3 @@ def delete_tx_resources(output_dir, extension, version):
                 tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
                 print("Deleting {}".format(resource_slug))
                 tx_api.delete_resource(tx_project, resource_slug)
-

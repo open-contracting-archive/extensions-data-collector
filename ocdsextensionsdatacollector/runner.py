@@ -20,7 +20,8 @@ class Runner:
                  extension_versions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
                 ):
         self.output_directory = output_directory or \
-                                os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'output_dir')
+            os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), '..', 'output_dir')
         self.extensions_data = extensions_data
         self.extension_versions_data = extension_versions_data
         self.sample = sample
@@ -33,7 +34,8 @@ class Runner:
             'extensions': {}
         }
 
-        registry = ExtensionRegistry(self.extension_versions_data, self.extensions_data)
+        registry = ExtensionRegistry(
+            self.extension_versions_data, self.extensions_data)
 
         for version in registry:
             if self.sample and len(self.out['extensions']) >= 5:
@@ -42,7 +44,7 @@ class Runner:
             self._add_basic_info_to_output(version)
             self._download_version(version)
             self._add_information_from_download_to_output(version)
-        
+
         docs_po(self.output_directory)
 
         # Do translations (unless --sample)
@@ -50,10 +52,10 @@ class Runner:
         if not self.sample:
             for version in registry:
                 # Upload EN files to transifex
-                upload_po_files(self.output_directory, version.id, version.version)
+                upload_po_files(self.output_directory,
+                                version.id, version.version)
                 # Download translations
                 # Add translations to self.out
-
 
         for extension_id in self.out['extensions'].keys():
             self._add_information_from_version_to_extension(
@@ -92,11 +94,13 @@ class Runner:
             'standard_compatibility': {}
         }
         for standard_version in STANDARD_COMPATIBILITY_VERSIONS:
-            self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False # noqa
+            self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False  # noqa
 
     def _download_version(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        version_output_file = os.path.join(self.output_directory, version.id, version.version + '-status.json')
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
+        version_output_file = os.path.join(
+            self.output_directory, version.id, version.version + '-status.json')
 
         if os.path.isfile(version_output_file):
             # We already have this download on disk!
@@ -138,14 +142,17 @@ class Runner:
     def _add_information_from_download_to_output(self, version):
         self._add_information_from_download_to_output_extension_json(version)
         self._add_information_from_download_to_output_release_schema(version)
-        self._add_information_from_download_to_output_record_package_schema(version)
-        self._add_information_from_download_to_output_release_package_schema(version)
+        self._add_information_from_download_to_output_record_package_schema(
+            version)
+        self._add_information_from_download_to_output_release_package_schema(
+            version)
         self._add_information_from_download_to_output_record_codelists(version)
         self._add_information_from_download_to_output_record_docs(version)
         self._add_information_from_download_to_output_record_readme(version)
 
     def _add_information_from_download_to_output_extension_json(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
 
         # Make EN .po files
         extension_po(self.output_directory, version.id, version.version)
@@ -162,8 +169,10 @@ class Runner:
                         True
 
     def _add_information_from_download_to_output_release_schema(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
+        release_schema_filename = os.path.join(
+            version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
 
             # Make EN .po files
@@ -180,8 +189,10 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_record_package_schema(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        record_package_schema_filename = os.path.join(version_output_dir, "record-package-schema.json")
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
+        record_package_schema_filename = os.path.join(
+            version_output_dir, "record-package-schema.json")
         if os.path.isfile(record_package_schema_filename):
             with open(record_package_schema_filename) as infile:
                 try:
@@ -194,8 +205,10 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_release_package_schema(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        release_package_schema_filename = os.path.join(version_output_dir, "release-package-schema.json")
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
+        release_package_schema_filename = os.path.join(
+            version_output_dir, "release-package-schema.json")
         if os.path.isfile(release_package_schema_filename):
             with open(release_package_schema_filename) as infile:
                 try:
@@ -208,7 +221,8 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_record_codelists(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
         codelists_dir_name = os.path.join(version_output_dir, "codelists")
         if os.path.isdir(codelists_dir_name):
 
@@ -222,7 +236,8 @@ class Runner:
 
             # Inject translations into self.out
 
-            names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
+            names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(
+                os.path.join(codelists_dir_name, f))]
             for name in names:
                 data = {
                     'items': {}
@@ -240,10 +255,12 @@ class Runner:
                 self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
 
     def _add_information_from_download_to_output_record_docs(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
         docs_dir_name = os.path.join(version_output_dir, "docs")
         if os.path.isdir(docs_dir_name):
-            names = [f for f in os.listdir(docs_dir_name) if os.path.isfile(os.path.join(docs_dir_name, f))]
+            names = [f for f in os.listdir(docs_dir_name) if os.path.isfile(
+                os.path.join(docs_dir_name, f))]
             for name in names:
                 with open(os.path.join(docs_dir_name, name), 'r') as docfile:
                     self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
@@ -253,7 +270,8 @@ class Runner:
                     }
 
     def _add_information_from_download_to_output_record_readme(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
+        version_output_dir = os.path.join(
+            self.output_directory, version.id, version.version)
         for name in ['README.md', 'readme.md']:
             readme_file_name = os.path.join(version_output_dir, name)
             if os.path.isfile(readme_file_name):
@@ -301,7 +319,8 @@ class Runner:
             self.out['extensions'][extension_id]['versions'][version_id]['description']
 
     def _add_version_key_lists_to_extension(self, extension_id):
-        all_version_keys = list(self.out['extensions'][extension_id]['versions'].keys())
+        all_version_keys = list(
+            self.out['extensions'][extension_id]['versions'].keys())
 
         all_version_keys.sort()
         # TODO sort all_version_keys better here
