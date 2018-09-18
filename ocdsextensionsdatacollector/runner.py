@@ -9,7 +9,7 @@ import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
-from ocdsextensionsdatacollector.i18n_helpers import walk_po_files, send_to_transifex, get_from_transifex
+from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -46,27 +46,6 @@ class Runner:
             self._download_version(version)
             self._add_information_from_download_to_output(version)
 
-        docs_po(self.output_directory)
-
-        # Do translations (unless --sample)
-        # A second loop to catch the docs .po files too. Better way?
-        if not self.sample:
-            for version in registry:
-                po_files = walk_po_files(
-                    self.output_directory, version.id, version.version)
-
-                for po_data in po_files:
-                    po_file, po_path, resource_slug, resource_name = po_data
-
-                    # Upload EN files to transifex
-                    # send_to_transifex(po_path, resource_slug, resource_name)
-
-                    # Download translations
-                    get_from_transifex(self.output_directory,
-                                       version.id, version.version, po_file)
-
-                    # Add translations to self.out
-
         for extension_id in self.out['extensions'].keys():
             self._add_information_from_version_to_extension(
                 extension_id,
@@ -74,6 +53,7 @@ class Runner:
             )
             self._add_version_key_lists_to_extension(extension_id)
 
+        self._do_translations(registry)
         self._write_output()
 
     def _add_basic_info_to_output(self, version):
@@ -164,9 +144,6 @@ class Runner:
         version_output_dir = os.path.join(
             self.output_directory, version.id, version.version)
 
-        # Make EN .po files
-        extension_po(self.output_directory, version.id, version.version)
-
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile))
             self.out['extensions'][version.id]['versions'][version.version]['name'] = \
@@ -184,9 +161,6 @@ class Runner:
         release_schema_filename = os.path.join(
             version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
-
-            # Make EN .po files
-            schema_po(self.output_directory, version.id, version.version)
 
             with open(release_schema_filename) as infile:
                 try:
@@ -235,9 +209,6 @@ class Runner:
             self.output_directory, version.id, version.version)
         codelists_dir_name = os.path.join(version_output_dir, "codelists")
         if os.path.isdir(codelists_dir_name):
-
-            # Make EN .po files
-            codelists_po(self.output_directory, version.id, version.version)
 
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(
                 os.path.join(codelists_dir_name, f))]
@@ -329,6 +300,40 @@ class Runner:
         # TODO sort all_version_keys better here
 
         self.out['extensions'][extension_id]['list_version_keys_all'] = all_version_keys
+
+    def _do_translations(self, registry):
+
+        # Make EN .po files for all extension docs
+        docs_po(self.output_directory)
+
+        for extension in registry:
+
+            # Make EN .po files for codelists, extension.json and release-schema.json
+            codelists_po(self.output_directory,
+                         extension.id, extension.version)
+            extension_po(self.output_directory,
+                         extension.id, extension.version)
+            schema_po(self.output_directory, extension.id, extension.version)
+
+            # Upload EN files to transifex
+            # Files in output_dir/locale/en/LC_MESSAGES/{extension}/{version}/*.po
+            #  are posted to the transifex API
+            upload_po_files(self.output_directory,
+                            extension.id, extension.version)
+
+            # Download translations
+            # Translations from transifex are saved in
+            #  output_dir/locale/{lang}/LC_MESSAGES/{extension}/{version}/*.po
+            download_po_files(self.output_directory,
+                              extension.id, extension.version)
+
+            # Do translations
+            # codelist_json = translate_codelists(self.output_directory, extension.id, extension.version)
+            # extension_json = translate_extension(self.output_directory, extension.id, extension.version)
+            # schema_json = translate_schema(self.output_directory, extension.id, extension.version)
+            # docs_md = translate_docs(self.output_directory, extension.id, extension.version)
+
+            # Add translations to self.out
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:

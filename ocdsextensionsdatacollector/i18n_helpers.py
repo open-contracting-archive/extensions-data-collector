@@ -192,8 +192,17 @@ def list_translated_languages(resource_slug):
         return
 
     tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
-    print('Getting languages for {}'.format(resource_slug))
     return tx_api.list_languages(tx_project, resource_slug)
+
+
+def list_lang_dirs(output_dir):
+    langs = []
+    translations_dir = os.path.join(output_dir, locale_dir)
+    for dir_name, subdirs, files in os.walk(translations_dir):
+        for subdir in subdirs:
+            langs.append(subdir)
+
+    return langs
 
 
 def get_from_transifex(output_dir, extension_id, version, po_file):
@@ -208,13 +217,14 @@ def get_from_transifex(output_dir, extension_id, version, po_file):
     for lang in langs:
         if 'en' not in lang.lower():
             save_path = os.path.join(
-                            output_dir, locale_dir, lang, 'LC_MESSAGES', 
-                            extension_id, version)
+                output_dir, locale_dir, lang, 'LC_MESSAGES',
+                extension_id, version)
             if not os.path.isdir(save_path):
                 os.makedirs(save_path, exist_ok=True)
-            
+
             print('Getting {} for {}'.format(lang, resource_slug))
-            tx_api.get_translation(tx_project, resource_slug, lang, os.path.join(save_path, po_file))
+            tx_api.get_translation(
+                tx_project, resource_slug, lang, os.path.join(save_path, po_file))
 
 
 def send_to_transifex(po_file, resource_slug, resource_name):
@@ -240,11 +250,9 @@ def send_to_transifex(po_file, resource_slug, resource_name):
             print('Updating {} on transifex'.format(resource_name))
 
 
-def walk_po_files(output_dir, extension, version):
+def upload_po_files(output_dir, extension, version):
     source_po_dir = os.path.join(
         output_dir, locale_dir, en_dir, extension, version)
-
-    file_path_slug_name = []
 
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
@@ -254,10 +262,16 @@ def walk_po_files(output_dir, extension, version):
                 resource_name = get_resource_name(extension, version, filename)
                 po_file_path = os.path.join(source_po_dir, filename)
 
-                file_path_slug_name.append(
-                    (filename, po_file_path, resource_slug, resource_name))
+                send_to_transifex(po_file_path, resource_slug, resource_name)
 
-    return file_path_slug_name
+
+def download_po_files(output_dir, extension, version):
+    source_po_dir = os.path.join(
+        output_dir, locale_dir, en_dir, extension, version)
+    for dir_name, subdirs, files in os.walk(source_po_dir):
+        for filename in files:
+            if filename.endswith('.po'):
+                get_from_transifex(output_dir, extension, version, filename)
 
 
 def delete_tx_resources(output_dir, extension, version):
