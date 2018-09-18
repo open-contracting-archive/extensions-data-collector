@@ -8,7 +8,8 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po, upload_po_files
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
+from ocdsextensionsdatacollector.i18n_helpers import walk_po_files, send_to_transifex, get_from_transifex
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -51,11 +52,20 @@ class Runner:
         # A second loop to catch the docs .po files too. Better way?
         if not self.sample:
             for version in registry:
-                # Upload EN files to transifex
-                upload_po_files(self.output_directory,
-                                version.id, version.version)
-                # Download translations
-                # Add translations to self.out
+                po_files = walk_po_files(
+                    self.output_directory, version.id, version.version)
+
+                for po_data in po_files:
+                    po_file, po_path, resource_slug, resource_name = po_data
+
+                    # Upload EN files to transifex
+                    # send_to_transifex(po_path, resource_slug, resource_name)
+
+                    # Download translations
+                    get_from_transifex(self.output_directory,
+                                       version.id, version.version, po_file)
+
+                    # Add translations to self.out
 
         for extension_id in self.out['extensions'].keys():
             self._add_information_from_version_to_extension(
@@ -228,13 +238,6 @@ class Runner:
 
             # Make EN .po files
             codelists_po(self.output_directory, version.id, version.version)
-            # Send EN to transifex
-
-            # Fetch other langs from transifex
-
-            # Translate codelists (ocdsdocumentationsupport.translate_codelists)
-
-            # Inject translations into self.out
 
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(
                 os.path.join(codelists_dir_name, f))]
