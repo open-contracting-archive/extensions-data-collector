@@ -1,12 +1,13 @@
-import os
-from decouple import config, UndefinedValueError
-from _csv import Error as CSVError
-import shutil
 import glob
-from contextlib import redirect_stdout, redirect_stderr
 import io
-
+import os
+import polib
+import shutil
 import sphinx
+from _csv import Error as CSVError
+from contextlib import redirect_stdout, redirect_stderr
+from decouple import config, UndefinedValueError
+
 from babel.messages.catalog import Catalog
 from babel.messages.extract import extract_from_dir, extract_from_file
 from babel.messages.pofile import write_po
@@ -15,6 +16,7 @@ from transifex.util import slugify
 from transifex.exceptions import TransifexAPIException
 
 from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_schema, extract_extension_meta
+from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_extension
 
 
 method_map = [
@@ -198,8 +200,8 @@ def list_translated_languages(resource_slug):
 def list_lang_dirs(output_dir):
     langs = []
     translations_dir = os.path.join(output_dir, locale_dir)
-    for dir_name, subdirs, files in os.walk(translations_dir):
-        for subdir in subdirs:
+    for subdir in os.listdir(translations_dir):
+        if os.path.isdir(os.path.join(translations_dir, subdir)):
             langs.append(subdir)
 
     return langs
@@ -287,3 +289,44 @@ def delete_tx_resources(output_dir, extension, version):
                 tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
                 print("Deleting {}".format(resource_slug))
                 tx_api.delete_resource(tx_project, resource_slug)
+
+
+def translate(output_dir, extension, version):
+    translated_json = {
+        'codelists': {},
+        'schema': {},
+        'extension': {},
+        'docs': ''
+    }
+    domains = {  # Path between LC_MESSAGES and the .po files
+        'codelists': '{}/{}/codelists'.format(extension, version),
+        'schema': '{}/{}/schema'.format(extension, version),
+        'extension': '{}/{}/extension'.format(extension, version),
+        'docs': '{}/{}/docs'.format(extension, version)
+    }
+    source_dir = os.path.join(output_dir, extension, version)
+    locale_path = os.path.join(output_dir, locale_dir)
+    langs = list_lang_dirs(output_dir)
+    for language in langs:
+        if 'en' not in language:
+            # build_dir is temporary and should be deleted?
+            # .. we don't need to keep the translated JSON etc around
+            # unless we want to hook this up to the backups at some point
+            build_dir = os.path.join(output_dir, language, extension, version)
+            if not os.path.isdir(build_dir):
+                os.makedirs(build_dir, exist_ok=True)
+
+            # Translate codelists
+            po_path = os.path.join(
+                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['codelists']))
+            if os.path.isfile(po_path):
+                po = polib.pofile(po_path)
+                po.save_as_mofile(po_path[:-3] + '.mo')
+                translate_codelists(
+                    domains['codelists'], 
+                    os.path.join(source_dir, 'codelists'), 
+                    os.path.join(build_dir, 'codelists'), 
+                    locale_path, language)
+                # translated_json['codelists'] = json.loads(translated file)
+
+    return translated_json

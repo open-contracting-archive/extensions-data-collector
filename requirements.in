@@ -4,3 +4,4 @@
 -e git+https://github.com/abendleiter/python-transifex.git@2e7de28c33e98a983d0a13f2cb020b548c8f5050#egg=python-transifex
 requests
 python-decouple
+polib

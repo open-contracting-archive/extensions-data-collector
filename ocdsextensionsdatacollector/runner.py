@@ -9,7 +9,7 @@ import csv
 
 from ocdsextensionregistry import ExtensionRegistry
 from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
-from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files
+from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -318,20 +318,17 @@ class Runner:
             # Upload EN files to transifex
             # Files in output_dir/locale/en/LC_MESSAGES/{extension}/{version}/*.po
             #  are posted to the transifex API
-            upload_po_files(self.output_directory,
-                            extension.id, extension.version)
+            # upload_po_files(self.output_directory,
+                            # extension.id, extension.version)
 
             # Download translations
             # Translations from transifex are saved in
             #  output_dir/locale/{lang}/LC_MESSAGES/{extension}/{version}/*.po
-            download_po_files(self.output_directory,
-                              extension.id, extension.version)
+            # download_po_files(self.output_directory,
+                              # extension.id, extension.version)
 
             # Do translations
-            # codelist_json = translate_codelists(self.output_directory, extension.id, extension.version)
-            # extension_json = translate_extension(self.output_directory, extension.id, extension.version)
-            # schema_json = translate_schema(self.output_directory, extension.id, extension.version)
-            # docs_md = translate_docs(self.output_directory, extension.id, extension.version)
+            translated_json = translate(self.output_directory, extension.id, extension.version)
 
             # Add translations to self.out
 
