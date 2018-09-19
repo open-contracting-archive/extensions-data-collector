@@ -6,7 +6,6 @@ import shutil
 import sphinx
 from _csv import Error as CSVError
 from contextlib import redirect_stdout, redirect_stderr
-from decouple import config, UndefinedValueError
 
 from babel.messages.catalog import Catalog
 from babel.messages.extract import extract_from_dir
@@ -29,11 +28,6 @@ en_dir = 'en/LC_MESSAGES'
 
 tx_endpoint = 'https://www.transifex.com'
 tx_project = 'ocds-extensions'
-
-try:
-    TX_API_KEY = config('TX_API_KEY')
-except UndefinedValueError:
-    TX_API_KEY = None
 
 
 def codelists_po(output_dir, extension_id, version):
@@ -81,8 +75,8 @@ def codelists_po(output_dir, extension_id, version):
 
 
 def schema_po(output_dir, extension_id, version):
-    # Gets all json files that aren't extension.json
-    # Puts them into one schema.po file
+    # Extracts all json files into one schema.po file
+    # (including extension.json)
     schema_dir = os.path.join(output_dir, extension_id, version)
     po_dir = os.path.join(output_dir, locale_dir,
                           en_dir, extension_id, version)
@@ -112,37 +106,6 @@ def schema_po(output_dir, extension_id, version):
                  sort_output=False,
                  sort_by_file=True,
                  include_lineno=True)
-
-
-# def extension_po(output_dir, extension_id, version):
-#     extension_file = os.path.join(
-#         output_dir, extension_id, version, 'extension.json')
-#     po_dir = os.path.join(output_dir, locale_dir,
-#                           en_dir, extension_id, version)
-#     if not os.path.isdir(po_dir):
-#         os.makedirs(po_dir, exist_ok=True)
-
-#     catalog = Catalog(project=None,
-#                       version=None,
-#                       msgid_bugs_address=None,
-#                       copyright_holder=None,
-#                       charset='utf-8')
-
-#     messages = extract_from_file(extract_extension_meta, extension_file)
-
-#     for lineno, message, comments, context in messages:
-#         catalog.add(message, None, [(extension_file, lineno)],
-#                     auto_comments=comments, context=context)
-
-#     output_file = os.path.join(po_dir, 'extension.po')
-#     with open(output_file, 'wb') as outfile:
-
-#         write_po(outfile, catalog, width=76,
-#                  no_location=False,
-#                  omit_header=False,
-#                  sort_output=False,
-#                  sort_by_file=True,
-#                  include_lineno=True)
 
 
 def docs_po(output_directory):
@@ -190,12 +153,8 @@ def get_resource_name(extension, version, po_file):
     return '{}/{}/{}'.format(extension, version, po_file.replace('.po', ''))
 
 
-def list_translated_languages(resource_slug):
-    if not TX_API_KEY:
-        print('No Transifex API key - please set TX_API_KEY in .env')
-        return
-
-    tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
+def list_translated_languages(resource_slug, tx_api_key):
+    tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
     return tx_api.list_languages(tx_project, resource_slug)
 
 
@@ -209,15 +168,11 @@ def list_lang_dirs(output_dir):
     return langs
 
 
-def get_from_transifex(output_dir, extension_id, version, po_file):
-    if not TX_API_KEY:
-        print('No Transifex API key - please set TX_API_KEY in .env')
-        return
-
-    tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
+def get_from_transifex(output_dir, extension_id, version, po_file, tx_api_key):
+    tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
     resource_slug = make_resource_slug(extension_id, version, po_file)
 
-    langs = list_translated_languages(resource_slug)
+    langs = list_translated_languages(resource_slug, tx_api_key)
     for lang in langs:
         if 'en' not in lang.lower():
             save_path = os.path.join(
@@ -231,13 +186,9 @@ def get_from_transifex(output_dir, extension_id, version, po_file):
                 tx_project, resource_slug, lang, os.path.join(save_path, po_file))
 
 
-def send_to_transifex(po_file, resource_slug, resource_name):
+def send_to_transifex(po_file, resource_slug, resource_name, tx_api_key):
 
-    if not TX_API_KEY:
-        print('No Transifex API key - please set TX_API_KEY in .env')
-        return
-
-    tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
+    tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
     if tx_api.project_exists(tx_project):
         try:
             response = tx_api.new_resource(
@@ -254,7 +205,7 @@ def send_to_transifex(po_file, resource_slug, resource_name):
             print('Updating {} on transifex'.format(resource_name))
 
 
-def upload_po_files(output_dir, extension, version):
+def upload_po_files(output_dir, extension, version, tx_api_key):
     source_po_dir = os.path.join(
         output_dir, locale_dir, en_dir, extension, version)
 
@@ -266,31 +217,35 @@ def upload_po_files(output_dir, extension, version):
                 resource_name = get_resource_name(extension, version, filename)
                 po_file_path = os.path.join(source_po_dir, filename)
 
-                send_to_transifex(po_file_path, resource_slug, resource_name)
+                send_to_transifex(po_file_path, resource_slug, resource_name, tx_api_key)
 
 
-def download_po_files(output_dir, extension, version):
+def download_po_files(output_dir, extension, version, tx_api_key):
     source_po_dir = os.path.join(
         output_dir, locale_dir, en_dir, extension, version)
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
-                get_from_transifex(output_dir, extension, version, filename)
+                get_from_transifex(output_dir, extension, version, filename, tx_api_key)
 
 
-def delete_tx_resources(output_dir, extension, version):
+def delete_tx_resources(output_dir, extension, version, tx_api_key):
     # For cleanup/debugging purposes
     source_po_dir = os.path.join(
         output_dir, locale_dir, en_dir, extension, version)
 
+    # files = ['release-schema.po', 'extension.po']
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
                 resource_slug = make_resource_slug(
                     extension, version, filename)
-                tx_api = TransifexAPI('api', TX_API_KEY, tx_endpoint)
+                tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
                 print("Deleting {}".format(resource_slug))
-                tx_api.delete_resource(tx_project, resource_slug)
+                try:
+                    tx_api.delete_resource(tx_project, resource_slug)
+                except TransifexAPIException:
+                    pass
 
 
 def translate(output_dir, extension, version):

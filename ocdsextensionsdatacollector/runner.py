@@ -6,9 +6,10 @@ import io
 import shutil
 import copy
 import csv
+from decouple import config, UndefinedValueError
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po, delete_tx_resources
 from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
@@ -29,6 +30,11 @@ class Runner:
         self.out = None
         if not os.path.isdir(self.output_directory):
             os.mkdir(self.output_directory)
+
+        try:
+            self.tx_api_key = config('TX_API_KEY')
+        except UndefinedValueError:
+            self.tx_api_key = None
 
     def run(self):
         self.out = {
@@ -53,7 +59,9 @@ class Runner:
             )
             self._add_version_key_lists_to_extension(extension_id)
 
-        self._do_translations(registry)
+        if self.tx_api_key is not None:
+            self._do_translations(registry)
+
         self._write_output()
 
     def _add_basic_info_to_output(self, version):
@@ -309,23 +317,28 @@ class Runner:
         for extension in registry:
 
             # Make EN .po files for codelists and schema
-            codelists_po(self.output_directory, extension.id, extension.version)
+            codelists_po(self.output_directory,
+                         extension.id, extension.version)
             schema_po(self.output_directory, extension.id, extension.version)
 
             # Upload EN files to transifex
             # Files in output_dir/locale/en/LC_MESSAGES/{extension}/{version}/*.po
             #  are posted to the transifex API
-            # upload_po_files(self.output_directory,
-                            # extension.id, extension.version)
+            upload_po_files(self.output_directory, extension.id,
+                            extension.version, self.tx_api_key)
 
             # Download translations
             # Translations from transifex are saved in
             #  output_dir/locale/{lang}/LC_MESSAGES/{extension}/{version}/*.po
-            # download_po_files(self.output_directory,
-                              # extension.id, extension.version)
+            download_po_files(self.output_directory, extension.id,
+                              extension.version, self.tx_api_key)
 
             # Do translations
-            translated_json = translate(self.output_directory, extension.id, extension.version)
+            # .po files are compiled to .mo files and used to generate translated
+            #  files in output_dir/{lang}/LC_MESSAGES/{extension}/{version}/
+            # TODO: We don't need to keep the translations around, delete them?
+            translated_json = translate(
+                self.output_directory, extension.id, extension.version)
 
             # Add translations to self.out
 
