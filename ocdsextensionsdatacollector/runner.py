@@ -412,14 +412,14 @@ class Runner:
             # Upload EN files to transifex
             # Files in output_dir/locale/en/LC_MESSAGES/{extension}/{version}/*.po
             #  are posted to the transifex API
-            # upload_po_files(self.output_directory, extension.id,
-            #                 extension.version, self.tx_api_key)
+            upload_po_files(self.output_directory, extension.id,
+                            extension.version, self.tx_api_key)
 
             # Download translations
             # Translations from transifex are saved in
             #  output_dir/locale/{lang}/LC_MESSAGES/{extension}/{version}/*.po
-            # download_po_files(self.output_directory, extension.id,
-            #                   extension.version, self.tx_api_key)
+            download_po_files(self.output_directory, extension.id,
+                              extension.version, self.tx_api_key)
 
             # Do translations
             # .po files are compiled to .mo files and used to generate translated
