@@ -9,18 +9,19 @@ from contextlib import redirect_stdout, redirect_stderr
 from decouple import config, UndefinedValueError
 
 from babel.messages.catalog import Catalog
-from babel.messages.extract import extract_from_dir, extract_from_file
+from babel.messages.extract import extract_from_dir
 from babel.messages.pofile import write_po
 from transifex.api import TransifexAPI
 from transifex.util import slugify
 from transifex.exceptions import TransifexAPIException
 
-from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_schema, extract_extension_meta
+from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_json
 from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_extension
 
 
 method_map = [
-    ('**.csv', extract_codelist)
+    ('*.csv', extract_codelist),
+    ('*.json', extract_json)
 ]
 
 locale_dir = 'locale'
@@ -80,10 +81,9 @@ def codelists_po(output_dir, extension_id, version):
 
 
 def schema_po(output_dir, extension_id, version):
-    # TODO: check if they're always called release-schema.json. Maybe not?
-    #       Shoudln't hard code this. Can there be more than one?
-    schema_file = os.path.join(
-        output_dir, extension_id, version, 'release-schema.json')
+    # Gets all json files that aren't extension.json
+    # Puts them into one schema.po file
+    schema_dir = os.path.join(output_dir, extension_id, version)
     po_dir = os.path.join(output_dir, locale_dir,
                           en_dir, extension_id, version)
     if not os.path.isdir(po_dir):
@@ -95,13 +95,15 @@ def schema_po(output_dir, extension_id, version):
                       copyright_holder=None,
                       charset='utf-8')
 
-    messages = extract_from_file(extract_schema, schema_file)
+    messages = extract_from_dir(schema_dir, method_map)
 
-    for lineno, message, comments, context in messages:
-        catalog.add(message, None, [(schema_file, lineno)],
+    for filename, lineno, message, comments, context in messages:
+
+        filepath = os.path.normpath(os.path.join(schema_dir, filename))
+        catalog.add(message, None, [(filepath, lineno)],
                     auto_comments=comments, context=context)
 
-    output_file = os.path.join(po_dir, 'release-schema.po')
+    output_file = os.path.join(po_dir, 'schema.po')
     with open(output_file, 'wb') as outfile:
 
         write_po(outfile, catalog, width=76,
@@ -112,35 +114,35 @@ def schema_po(output_dir, extension_id, version):
                  include_lineno=True)
 
 
-def extension_po(output_dir, extension_id, version):
-    extension_file = os.path.join(
-        output_dir, extension_id, version, 'extension.json')
-    po_dir = os.path.join(output_dir, locale_dir,
-                          en_dir, extension_id, version)
-    if not os.path.isdir(po_dir):
-        os.makedirs(po_dir, exist_ok=True)
+# def extension_po(output_dir, extension_id, version):
+#     extension_file = os.path.join(
+#         output_dir, extension_id, version, 'extension.json')
+#     po_dir = os.path.join(output_dir, locale_dir,
+#                           en_dir, extension_id, version)
+#     if not os.path.isdir(po_dir):
+#         os.makedirs(po_dir, exist_ok=True)
 
-    catalog = Catalog(project=None,
-                      version=None,
-                      msgid_bugs_address=None,
-                      copyright_holder=None,
-                      charset='utf-8')
+#     catalog = Catalog(project=None,
+#                       version=None,
+#                       msgid_bugs_address=None,
+#                       copyright_holder=None,
+#                       charset='utf-8')
 
-    messages = extract_from_file(extract_extension_meta, extension_file)
+#     messages = extract_from_file(extract_extension_meta, extension_file)
 
-    for lineno, message, comments, context in messages:
-        catalog.add(message, None, [(extension_file, lineno)],
-                    auto_comments=comments, context=context)
+#     for lineno, message, comments, context in messages:
+#         catalog.add(message, None, [(extension_file, lineno)],
+#                     auto_comments=comments, context=context)
 
-    output_file = os.path.join(po_dir, 'extension.po')
-    with open(output_file, 'wb') as outfile:
+#     output_file = os.path.join(po_dir, 'extension.po')
+#     with open(output_file, 'wb') as outfile:
 
-        write_po(outfile, catalog, width=76,
-                 no_location=False,
-                 omit_header=False,
-                 sort_output=False,
-                 sort_by_file=True,
-                 include_lineno=True)
+#         write_po(outfile, catalog, width=76,
+#                  no_location=False,
+#                  omit_header=False,
+#                  sort_output=False,
+#                  sort_by_file=True,
+#                  include_lineno=True)
 
 
 def docs_po(output_directory):
@@ -323,9 +325,9 @@ def translate(output_dir, extension, version):
                 po = polib.pofile(po_path)
                 po.save_as_mofile(po_path[:-3] + '.mo')
                 translate_codelists(
-                    domains['codelists'], 
-                    os.path.join(source_dir, 'codelists'), 
-                    os.path.join(build_dir, 'codelists'), 
+                    domains['codelists'],
+                    os.path.join(source_dir, 'codelists'),
+                    os.path.join(build_dir, 'codelists'),
                     locale_path, language)
                 # translated_json['codelists'] = json.loads(translated file)
 

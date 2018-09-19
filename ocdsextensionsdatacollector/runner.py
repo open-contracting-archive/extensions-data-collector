@@ -8,7 +8,7 @@ import copy
 import csv
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, extension_po, docs_po
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
 from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
@@ -308,11 +308,8 @@ class Runner:
 
         for extension in registry:
 
-            # Make EN .po files for codelists, extension.json and release-schema.json
-            codelists_po(self.output_directory,
-                         extension.id, extension.version)
-            extension_po(self.output_directory,
-                         extension.id, extension.version)
+            # Make EN .po files for codelists and schema
+            codelists_po(self.output_directory, extension.id, extension.version)
             schema_po(self.output_directory, extension.id, extension.version)
 
             # Upload EN files to transifex
