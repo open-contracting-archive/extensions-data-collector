@@ -15,7 +15,7 @@ from transifex.util import slugify
 from transifex.exceptions import TransifexAPIException
 
 from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_json
-from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_extension
+from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_docs
 
 
 method_map = [
@@ -281,4 +281,21 @@ def translate(output_dir, extension, version):
                     os.path.join(source_dir, 'codelists'),
                     os.path.join(build_dir, 'codelists'),
                     locale_path, language)
+
+            # Translate schema
+            # This DOES NOT include extension.json, these needs wrangling separately somewhere..
+            po_path = os.path.join(
+                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['schema']))
+            schema_filenames = ['record-package-schema.json', 'release-package-schema.json', 'release-schema.json']
+            filenames = [f for f in schema_filenames if os.path.isfile(os.path.join(source_dir, f))]
+            if os.path.isfile(po_path):
+                po = polib.pofile(po_path)
+                po.save_as_mofile(po_path[:-3] + '.mo')
+                translate_schema(
+                    domains['schema'], filenames, source_dir, build_dir, locale_path, language, version)
+
+            # TODO: translate docs/readme
+            po_path = os.path.join(
+                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['docs']))
+
     return langs

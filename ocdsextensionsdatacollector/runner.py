@@ -149,65 +149,103 @@ class Runner:
         self._add_information_from_download_to_output_record_docs(version)
         self._add_information_from_download_to_output_record_readme(version)
 
-    def _add_information_from_download_to_output_extension_json(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_extension_json(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
 
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile))
-            self.out['extensions'][version.id]['versions'][version.version]['name'] = \
-                extension_json['name']
-            self.out['extensions'][version.id]['versions'][version.version]['description'] = \
-                extension_json['description']
+            
+            self.out['extensions'][version.id]['versions'][version.version][language] = {
+                'name': extension_json['name']
+            }
+            self.out['extensions'][version.id]['versions'][version.version][language] = {
+                'description': extension_json['description']
+            }
+            
             for c_v in STANDARD_COMPATIBILITY_VERSIONS:
                 if c_v in extension_json['compatibility']:
                     self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][c_v] = \
                         True
 
-    def _add_information_from_download_to_output_release_schema(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_release_schema(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
+
         release_schema_filename = os.path.join(
             version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
 
             with open(release_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
-                        "en": json.load(infile)
-                    }
+                    file_json = json.load(infile)
+                    if self.out['extensions'][version.id]['versions'][version.version]['release_schema'] is not None:
+                        self.out['extensions'][version.id]['versions'][version.version]['release_schema'][language] = file_json
+                    else:
+                        self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
+                            language: file_json
+                        }
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse release-schema.json: ' + error.msg
                     })
 
-    def _add_information_from_download_to_output_record_package_schema(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_record_package_schema(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
+
         record_package_schema_filename = os.path.join(
             version_output_dir, "record-package-schema.json")
         if os.path.isfile(record_package_schema_filename):
             with open(record_package_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = {
-                        "en": json.load(infile)
-                    }
+                    file_json = json.load(infile)
+                    
+                    if self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] is not None:
+                        self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'][language] = file_json
+                    else:
+                        self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = {
+                            language: file_json
+                        }
+
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
                     })
 
-    def _add_information_from_download_to_output_release_package_schema(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_release_package_schema(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
+
         release_package_schema_filename = os.path.join(
             version_output_dir, "release-package-schema.json")
+
         if os.path.isfile(release_package_schema_filename):
             with open(release_package_schema_filename) as infile:
                 try:
-                    self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = {
-                        "en": json.load(infile)
-                    }
+                    file_json = json.load(infile)
+                    if self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] is not None:
+                        self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'][language] = file_json
+                    else:
+                        self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = {
+                            language: file_json
+                        }
                 except json.decoder.JSONDecodeError as error:
                     self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
@@ -227,21 +265,21 @@ class Runner:
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(
                 os.path.join(codelists_dir_name, f))]
             for name in names:
-                
+
                 data = {'items': {}, 'fieldnames': OrderedDict()}
-                
-                existing_items = self.out.get('extensions', {}).get(version.id, {}).get('versions', {}).get(version.version, {}).get('codelists', {}).get(name)
-                
+
+                existing_items = self.out.get('extensions', {}).get(version.id, {}).get(
+                    'versions', {}).get(version.version, {}).get('codelists', {}).get(name)
+
                 if existing_items is not None:
                     if existing_items.get('items') is not None:
                         data['items'] = existing_items['items']
                     if existing_items.get('fieldnames') is not None:
                         data['fieldnames'] = existing_items['fieldnames']
-                
-                
+
                 with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    
+
                     # Extract the csv headers from the EN version to use as canonical
                     # keys to reference the codes
                     if language == 'en':
@@ -266,7 +304,11 @@ class Runner:
                     try:
                         code_header = data['fieldnames']['Code'][language]
                     except KeyError:
-                        print('Code not found in {}'.format(data['fieldnames']))
+                        print('Code not found in {}'.format(
+                            data['fieldnames']))
+
+                    # And use the translated headers to map the translated values onto
+                    # translated keys in the output
                     for row in reader:
                         if code_header in row:
                             code = row[code_header]
@@ -313,6 +355,7 @@ class Runner:
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json):
+        # TODO: i18n here
         out_extension_json = copy.deepcopy(in_extension_json)
 
         if out_extension_json['name'] and isinstance(out_extension_json['name'], str):
@@ -369,19 +412,19 @@ class Runner:
             # Upload EN files to transifex
             # Files in output_dir/locale/en/LC_MESSAGES/{extension}/{version}/*.po
             #  are posted to the transifex API
-            upload_po_files(self.output_directory, extension.id,
-                            extension.version, self.tx_api_key)
+            # upload_po_files(self.output_directory, extension.id,
+            #                 extension.version, self.tx_api_key)
 
             # Download translations
             # Translations from transifex are saved in
             #  output_dir/locale/{lang}/LC_MESSAGES/{extension}/{version}/*.po
-            download_po_files(self.output_directory, extension.id,
-                              extension.version, self.tx_api_key)
+            # download_po_files(self.output_directory, extension.id,
+            #                   extension.version, self.tx_api_key)
 
             # Do translations
             # .po files are compiled to .mo files and used to generate translated
             #  files in output_dir/{lang}/LC_MESSAGES/{extension}/{version}/
-            # TODO: We don't need to keep the translations around, delete them?
+            # TODO: We don't need to keep the translations around, delete them after?
             languages = translate(self.output_directory,
                                   extension.id, extension.version)
 
@@ -390,6 +433,12 @@ class Runner:
                 if language != 'en':
                     self._add_information_from_download_to_output_record_codelists(
                         extension, language)
+                    # TODO: self._add_information_from_download_to_output_extension_json(extension, language)
+                    self._add_information_from_download_to_output_release_schema(extension, language)
+                    self._add_information_from_download_to_output_record_package_schema(extension, language)
+                    self._add_information_from_download_to_output_release_package_schema(extension, language)
+                    # TODO: readme
+                    # TODO: docs
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:
