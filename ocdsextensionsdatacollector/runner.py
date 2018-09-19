@@ -6,6 +6,7 @@ import io
 import shutil
 import copy
 import csv
+from collections import OrderedDict
 from decouple import config, UndefinedValueError
 
 from ocdsextensionregistry import ExtensionRegistry
@@ -212,28 +213,72 @@ class Runner:
                         'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
                     })
 
-    def _add_information_from_download_to_output_record_codelists(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_record_codelists(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
+
         codelists_dir_name = os.path.join(version_output_dir, "codelists")
         if os.path.isdir(codelists_dir_name):
 
             names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(
                 os.path.join(codelists_dir_name, f))]
             for name in names:
-                data = {
-                    'items': {}
-                }
+                
+                data = {'items': {}, 'fieldnames': OrderedDict()}
+                
+                existing_items = self.out.get('extensions', {}).get(version.id, {}).get('versions', {}).get(version.version, {}).get('codelists', {}).get(name)
+                
+                if existing_items is not None:
+                    if existing_items.get('items') is not None:
+                        data['items'] = existing_items['items']
+                    if existing_items.get('fieldnames') is not None:
+                        data['fieldnames'] = existing_items['fieldnames']
+                
+                
                 with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    for row in reader:
-                        if "Code" in row:
-                            code = row["Code"]
-                            del row["Code"]
-                            if code:
-                                data['items'][code] = {
-                                    'en': row
+                    
+                    # Extract the csv headers from the EN version to use as canonical
+                    # keys to reference the codes
+                    if language == 'en':
+                        fieldnames = reader.fieldnames
+                        for fieldname in fieldnames:
+                            try:
+                                data['fieldnames'][fieldname]['en'] = fieldname
+                            except KeyError:
+                                data['fieldnames'][fieldname] = {
+                                    'en': fieldname
                                 }
+                    else:
+                        # And assume the translated headers will be in the same order as EN
+                        fieldnames = reader.fieldnames
+                        en_fieldnames = list(data['fieldnames'].keys())
+
+                        for index, fieldname in enumerate(fieldnames):
+                            key = en_fieldnames[index]
+                            data['fieldnames'][key][language] = fieldname
+
+                    # Now we can look up the translated header by the EN key
+                    try:
+                        code_header = data['fieldnames']['Code'][language]
+                    except KeyError:
+                        print('Code not found in {}'.format(data['fieldnames']))
+                    for row in reader:
+                        if code_header in row:
+                            code = row[code_header]
+                            del row[code_header]
+                            if code:
+                                try:
+                                    data['items'][code][language] = row
+                                except KeyError:
+                                    data['items'][code] = {
+                                        language: row
+                                    }
+
                 self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
 
     def _add_information_from_download_to_output_record_docs(self, version):
@@ -337,10 +382,14 @@ class Runner:
             # .po files are compiled to .mo files and used to generate translated
             #  files in output_dir/{lang}/LC_MESSAGES/{extension}/{version}/
             # TODO: We don't need to keep the translations around, delete them?
-            translated_json = translate(
-                self.output_directory, extension.id, extension.version)
+            languages = translate(self.output_directory,
+                                  extension.id, extension.version)
 
             # Add translations to self.out
+            for language in languages:
+                if language != 'en':
+                    self._add_information_from_download_to_output_record_codelists(
+                        extension, language)
 
     def _write_output(self):
         with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:

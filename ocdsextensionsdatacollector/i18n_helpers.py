@@ -217,7 +217,8 @@ def upload_po_files(output_dir, extension, version, tx_api_key):
                 resource_name = get_resource_name(extension, version, filename)
                 po_file_path = os.path.join(source_po_dir, filename)
 
-                send_to_transifex(po_file_path, resource_slug, resource_name, tx_api_key)
+                send_to_transifex(po_file_path, resource_slug,
+                                  resource_name, tx_api_key)
 
 
 def download_po_files(output_dir, extension, version, tx_api_key):
@@ -226,7 +227,8 @@ def download_po_files(output_dir, extension, version, tx_api_key):
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
-                get_from_transifex(output_dir, extension, version, filename, tx_api_key)
+                get_from_transifex(output_dir, extension,
+                                   version, filename, tx_api_key)
 
 
 def delete_tx_resources(output_dir, extension, version, tx_api_key):
@@ -249,18 +251,13 @@ def delete_tx_resources(output_dir, extension, version, tx_api_key):
 
 
 def translate(output_dir, extension, version):
-    translated_json = {
-        'codelists': {},
-        'schema': {},
-        'extension': {},
-        'docs': ''
-    }
     domains = {  # Path between LC_MESSAGES and the .po files
         'codelists': '{}/{}/codelists'.format(extension, version),
         'schema': '{}/{}/schema'.format(extension, version),
         'extension': '{}/{}/extension'.format(extension, version),
         'docs': '{}/{}/docs'.format(extension, version)
     }
+
     source_dir = os.path.join(output_dir, extension, version)
     locale_path = os.path.join(output_dir, locale_dir)
     langs = list_lang_dirs(output_dir)
@@ -284,6 +281,4 @@ def translate(output_dir, extension, version):
                     os.path.join(source_dir, 'codelists'),
                     os.path.join(build_dir, 'codelists'),
                     locale_path, language)
-                # translated_json['codelists'] = json.loads(translated file)
-
-    return translated_json
+    return langs
