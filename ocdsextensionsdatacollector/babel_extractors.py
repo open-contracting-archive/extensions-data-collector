@@ -4,6 +4,14 @@ from ocdsdocumentationsupport.babel_extractors import extract_codelist, extract_
 
 TRANSLATABLE_EXTENSION_KEYWORDS = ('name', 'description')
 
+
+def extract_json(fileobj, keywords, comment_tags, options):
+    if 'extension.json' in fileobj.name:
+        return extract_extension_meta(fileobj, keywords, comment_tags, options)
+    else:
+        return extract_schema(fileobj, keywords, comment_tags, options)
+
+
 def extract_extension_meta(fileobj, keywords, comment_tags, options):
     """
     Yields the "title" and "description" values of an extension.json file.
