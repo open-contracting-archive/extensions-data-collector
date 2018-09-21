@@ -158,15 +158,14 @@ class Runner:
                 self.output_directory, language, version.id, version.version)
 
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
-            extension_json = self._normalise_extension_json(json.load(infile))
-            
-            self.out['extensions'][version.id]['versions'][version.version][language] = {
-                'name': extension_json['name']
-            }
-            self.out['extensions'][version.id]['versions'][version.version][language] = {
-                'description': extension_json['description']
-            }
-            
+            extension_json = self._normalise_extension_json(json.load(infile), language=language)
+
+            for field in ('name', 'description'):
+                version_object = self.out['extensions'][version.id]['versions'][version.version]
+                language_object = version_object.get(field) or {}
+                version_object[field] = language_object
+                language_object[language] = extension_json[field][language]
+
             for c_v in STANDARD_COMPATIBILITY_VERSIONS:
                 if c_v in extension_json['compatibility']:
                     self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][c_v] = \
@@ -338,33 +337,38 @@ class Runner:
                         }
                     }
 
-    def _add_information_from_download_to_output_record_readme(self, version):
-        version_output_dir = os.path.join(
-            self.output_directory, version.id, version.version)
+    def _add_information_from_download_to_output_record_readme(self, version, language='en'):
+        if language == 'en':
+            version_output_dir = os.path.join(
+                self.output_directory, version.id, version.version)
+        else:
+            version_output_dir = os.path.join(
+                self.output_directory, language, version.id, version.version)
+
         for name in ['README.md', 'readme.md']:
             readme_file_name = os.path.join(version_output_dir, name)
             if os.path.isfile(readme_file_name):
                 with open(readme_file_name, 'r') as readmefile:
-                    self.out['extensions'][version.id]['versions'][version.version]['readme'] = {
-                        "en": {
-                            "content": readmefile.read(),
-                            "type": "markdown"
-                        }
+                    version_object = self.out['extensions'][version.id]['versions'][version.version]
+                    readme_object = version_object.get('readme') or {}
+                    version_object['readme'] = readme_object
+                    readme_object[language] = {
+                        "content": readmefile.read(),
+                        "type": "markdown"
                     }
                     return
 
     # This def is a candidate for pushing upstream to extension_registry.py
-    def _normalise_extension_json(self, in_extension_json):
-        # TODO: i18n here
+    def _normalise_extension_json(self, in_extension_json, language='en'):
         out_extension_json = copy.deepcopy(in_extension_json)
 
         if out_extension_json['name'] and isinstance(out_extension_json['name'], str):
             out_extension_json['name'] = {
-                'en': out_extension_json['name']
+                language: out_extension_json['name']
             }
         if out_extension_json['description'] and isinstance(out_extension_json['description'], str):
             out_extension_json['description'] = {
-                'en': out_extension_json['description']
+                language: out_extension_json['description']
             }
         if 'compatibility' not in out_extension_json or isinstance(out_extension_json['compatibility'], str):
             # Historical data - Assume it's compatible with earliest version that had extensions.
@@ -433,11 +437,11 @@ class Runner:
                 if language != 'en':
                     self._add_information_from_download_to_output_record_codelists(
                         extension, language)
-                    # TODO: self._add_information_from_download_to_output_extension_json(extension, language)
+                    self._add_information_from_download_to_output_extension_json(extension, language)
                     self._add_information_from_download_to_output_release_schema(extension, language)
                     self._add_information_from_download_to_output_record_package_schema(extension, language)
                     self._add_information_from_download_to_output_release_package_schema(extension, language)
-                    # TODO: readme
+                    self._add_information_from_download_to_output_record_readme(extension, language)
                     # TODO: docs
 
     def _write_output(self):
