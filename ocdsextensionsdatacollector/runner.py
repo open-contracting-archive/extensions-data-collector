@@ -311,7 +311,6 @@ class Runner:
                     for row in reader:
                         if code_header in row:
                             code = row[code_header]
-                            del row[code_header]
                             if code:
                                 try:
                                     data['items'][code][language] = row
