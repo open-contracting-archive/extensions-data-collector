@@ -132,6 +132,10 @@ def docs_po(output_directory):
 
     os.remove(os.path.join(output_directory, 'index.md'))
     os.remove(os.path.join(temp_i18n_directory, 'index.pot'))
+    try:
+        shutil.rmtree(os.path.join(temp_i18n_directory, 'locale'))
+    except FileNotFoundError:
+        pass
 
     for full_file_path in glob.glob(temp_i18n_directory + '/**/README.pot', recursive=True):
         new_relative_path = full_file_path[len(
@@ -266,7 +270,7 @@ def translate(output_dir, extension, version):
             # build_dir is temporary and should be deleted?
             # .. we don't need to keep the translated JSON etc around
             # unless we want to hook this up to the backups at some point
-            build_dir = os.path.join(output_dir, language, extension, version)
+            build_dir = os.path.join(locale_path, language, 'TRANSLATIONS', extension, version)
             if not os.path.isdir(build_dir):
                 os.makedirs(build_dir, exist_ok=True)
 

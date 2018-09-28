@@ -10,8 +10,8 @@ from collections import OrderedDict
 from decouple import config, UndefinedValueError
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po, delete_tx_resources
-from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate
+from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
+from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate, locale_dir
 
 STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
@@ -155,7 +155,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         with open(os.path.join(version_output_dir, "extension.json")) as infile:
             extension_json = self._normalise_extension_json(json.load(infile), language=language)
@@ -177,7 +177,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         release_schema_filename = os.path.join(
             version_output_dir, "release-schema.json")
@@ -203,7 +203,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         record_package_schema_filename = os.path.join(
             version_output_dir, "record-package-schema.json")
@@ -230,7 +230,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         release_package_schema_filename = os.path.join(
             version_output_dir, "release-package-schema.json")
@@ -256,7 +256,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         codelists_dir_name = os.path.join(version_output_dir, "codelists")
         if os.path.isdir(codelists_dir_name):
@@ -342,7 +342,7 @@ class Runner:
                 self.output_directory, version.id, version.version)
         else:
             version_output_dir = os.path.join(
-                self.output_directory, language, version.id, version.version)
+                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
 
         for name in ['README.md', 'readme.md']:
             readme_file_name = os.path.join(version_output_dir, name)
