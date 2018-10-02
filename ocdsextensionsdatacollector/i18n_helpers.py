@@ -15,7 +15,7 @@ from transifex.util import slugify
 from transifex.exceptions import TransifexAPIException
 
 from ocdsextensionsdatacollector.babel_extractors import extract_codelist, extract_json
-from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_extension, translate_docs
+from ocdsextensionsdatacollector.translation import translate_codelists, translate_schema, translate_extension, translate_docs # noqa
 
 
 method_map = [
@@ -185,7 +185,6 @@ def get_from_transifex(output_dir, extension_id, version, po_file, tx_api_key):
             if not os.path.isdir(save_path):
                 os.makedirs(save_path, exist_ok=True)
 
-            print('Getting {} for {}'.format(lang, resource_slug))
             tx_api.get_translation(
                 tx_project, resource_slug, lang, os.path.join(save_path, po_file))
 
@@ -195,18 +194,16 @@ def send_to_transifex(po_file, resource_slug, resource_name, tx_api_key):
     tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
     if tx_api.project_exists(tx_project):
         try:
-            response = tx_api.new_resource(
+            tx_api.new_resource(
                 tx_project,
                 po_file,
                 resource_slug=resource_slug,
                 resource_name=resource_name)
-            print('Creating {} on transifex'.format(resource_name))
         except TransifexAPIException:
-            response = tx_api.update_source_translation(
+            tx_api.update_source_translation(
                 tx_project,
                 resource_slug,
                 po_file)
-            print('Updating {} on transifex'.format(resource_name))
 
 
 def upload_po_files(output_dir, extension, version, tx_api_key):
@@ -307,6 +304,5 @@ def translate(output_dir, extension, version):
                 po.save_as_mofile(po_path[:-3] + '.mo')
                 translate_docs(
                     domains['docs'], source_dir, build_dir, locale_path, language, extension, version)
-
 
     return langs

@@ -182,18 +182,18 @@ class Runner:
         release_schema_filename = os.path.join(
             version_output_dir, "release-schema.json")
         if os.path.isfile(release_schema_filename):
-
             with open(release_schema_filename) as infile:
                 try:
+                    version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
-                    if self.out['extensions'][version.id]['versions'][version.version]['release_schema'] is not None:
-                        self.out['extensions'][version.id]['versions'][version.version]['release_schema'][language] = file_json
+                    if version_obj['release_schema'] is not None:
+                        version_obj['release_schema'][language] = file_json
                     else:
-                        self.out['extensions'][version.id]['versions'][version.version]['release_schema'] = {
+                        version_obj['release_schema'] = {
                             language: file_json
                         }
                 except json.decoder.JSONDecodeError as error:
-                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                    version_obj['errors'].append({
                         'message': 'Error while trying to parse release-schema.json: ' + error.msg
                     })
 
@@ -210,17 +210,17 @@ class Runner:
         if os.path.isfile(record_package_schema_filename):
             with open(record_package_schema_filename) as infile:
                 try:
+                    version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
-                    
-                    if self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] is not None:
-                        self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'][language] = file_json
+                    if version_obj['record_package_schema'] is not None:
+                        version_obj['record_package_schema'][language] = file_json
                     else:
-                        self.out['extensions'][version.id]['versions'][version.version]['record_package_schema'] = {
+                        version_obj['record_package_schema'] = {
                             language: file_json
                         }
 
                 except json.decoder.JSONDecodeError as error:
-                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                    version_obj['errors'].append({
                         'message': 'Error while trying to parse record-package-schema.json: ' + error.msg
                     })
 
@@ -238,15 +238,16 @@ class Runner:
         if os.path.isfile(release_package_schema_filename):
             with open(release_package_schema_filename) as infile:
                 try:
+                    version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
-                    if self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] is not None:
-                        self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'][language] = file_json
+                    if version_obj['release_package_schema'] is not None:
+                        version_obj['release_package_schema'][language] = file_json
                     else:
-                        self.out['extensions'][version.id]['versions'][version.version]['release_package_schema'] = {
+                        version_obj['release_package_schema'] = {
                             language: file_json
                         }
                 except json.decoder.JSONDecodeError as error:
-                    self.out['extensions'][version.id]['versions'][version.version]['errors'].append({
+                    version_obj['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + error.msg
                     })
 

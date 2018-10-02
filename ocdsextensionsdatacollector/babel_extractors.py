@@ -1,5 +1,5 @@
 import json
-from ocdsdocumentationsupport.babel_extractors import extract_codelist, extract_schema
+from ocdsdocumentationsupport.babel_extractors import extract_codelist, extract_schema # noqa
 
 
 TRANSLATABLE_EXTENSION_KEYWORDS = ('name', 'description')

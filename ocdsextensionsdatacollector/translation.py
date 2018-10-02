@@ -14,7 +14,7 @@ def translate_extension(domain, sourcedir, builddir, localedir, language):
 
     os.makedirs(builddir, exist_ok=True)
 
-    with open(os.path.join(sourcedir, 'extension.json')) as r, open(os.path.join(builddir, 'extension.json'), 'w') as w:
+    with open(os.path.join(sourcedir, 'extension.json')) as r, open(os.path.join(builddir, 'extension.json'), 'w') as w: # noqa
         data = json.load(r, object_pairs_hook=OrderedDict)
         for key in ('name', 'description'):
             if isinstance(data[key], dict):
