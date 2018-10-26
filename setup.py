@@ -1,27 +1,35 @@
-#!/usr/bin/env python
-import io
-import os
-from distutils.core import setup
+from setuptools import setup, find_packages
 
+with open('README.md') as f:
+    long_description = f.read()
 
-here = os.path.abspath(os.path.dirname(__file__))
-
-# Import the README and use it as the long-description.
-with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = '\n' + f.read()
-
-setup(name='ocdsextensionsdatacollector',
-      version='0.0.1',
-      description='Collect data about Open Contracting Data Standard Extensions ' +
-                  'into a machine readable format for re-use',
-      long_description=long_description,
-      long_description_content_type='text/markdown',
-      author='Open Contracting Partnership, Open Data Services',
-      author_email='data@open-contracting.org',
-      url='https://open-contracting.org',
-      license='BSD',
-      packages=[
-            'ocdsextensionsdatacollector'
-      ],
-      scripts=['cli.py']
-      )
+setup(
+    name='ocdsextensionsdatacollector',
+    version='0.0.1',
+    author='Open Contracting Partnership, Open Data Services',
+    author_email='data@open-contracting.org',
+    url='https://github.com/open-contracting/extensions-data-collector',
+    description='Collects data about OCDS extensions into a machine-readable format',
+    license='BSD',
+    packages=find_packages(),
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    scripts=['cli.py'],
+    install_requires=[
+      'ocdsextensionregistry>=0.0.3',
+      'polib',
+      'python-decouple',
+      'requests',
+    ],
+    extras_require={
+        'test': [
+            'coveralls',
+            'pytest',
+            'pytest-cov',
+        ],
+    },
+    classifiers=[
+        'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python :: 3.6',
+    ],
+)
