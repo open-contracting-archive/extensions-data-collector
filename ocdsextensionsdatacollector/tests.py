@@ -39,7 +39,7 @@ extension_one,2017-05-09,master,http://example.com/,http://example.com/"""
     registry = ocdsextensionregistry.ExtensionRegistry(extension_versions_data, extensions_data)
 
     for version in registry:
-        runner._add_basic_info_to_output(version)
+        runner._add_registry_metadata_to_output(version)
         runner._add_information_from_download_to_output(version)
 
     assert runner.out['extensions']['extension_one']['versions']['master']['name']['en'] == \
@@ -67,7 +67,7 @@ extension_one,2017-05-09,master,http://example.com/,http://example.com/"""
     registry = ocdsextensionregistry.ExtensionRegistry(extension_versions_data, extensions_data)
 
     for version in registry:
-        runner._add_basic_info_to_output(version)
+        runner._add_registry_metadata_to_output(version)
         runner._add_information_from_download_to_output(version)
 
     assert runner.out['extensions']['extension_one']['versions']['master']['name']['en'] == \

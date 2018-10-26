@@ -7,7 +7,6 @@ import shutil
 import copy
 import csv
 from collections import OrderedDict
-from decouple import config, UndefinedValueError
 
 from ocdsextensionregistry import ExtensionRegistry
 from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
@@ -39,9 +38,9 @@ class Runner:
 
         for version in registry:
             if self.limit and len(self.out['extensions']) >= self.limit:
-                continue
+                break
 
-            self._add_basic_info_to_output(version)
+            self._add_registry_metadata_to_output(version)
             self._download_version(version)
             self._add_information_from_download_to_output(version)
 
@@ -57,19 +56,20 @@ class Runner:
 
         self._write_output()
 
-    def _add_basic_info_to_output(self, version):
-        if version.id not in self.out['extensions']:
-            self.out['extensions'][version.id] = {
+    def _add_registry_metadata_to_output(self, version):
+        extensions_obj = self.out['extensions']
+        if version.id not in extensions_obj:
+            extensions_obj[version.id] = {
                 'versions': {},
                 'category': version.category,
                 'core': version.core,
                 'main_version': None,
                 'name': {},
                 'description': {},
-                'list_version_keys_all': []
+                'list_version_keys_all': [],
             }
 
-        self.out['extensions'][version.id]['versions'][version.version] = {
+        extensions_obj[version.id]['versions'][version.version] = {
             'date': version.date,
             'base_url': version.base_url,
             'download_url': version.download_url,
@@ -82,30 +82,26 @@ class Runner:
             'readme': None,
             'name': {},
             'description': {},
-            'standard_compatibility': {}
+            'standard_compatibility': {},
         }
+
         for standard_version in STANDARD_COMPATIBILITY_VERSIONS:
-            self.out['extensions'][version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False  # noqa
+            extensions_obj[version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False
 
     def _download_version(self, version):
         version_output_dir = os.path.join(self.output_directory, version.id, version.version)
         version_output_file = os.path.join(self.output_directory, version.id, version.version + '-status.json')
 
+        # Trust that frozen versions of core extensions don't change.
+        if os.path.isfile(version_output_file) and os.path.isdir(version_output_dir) and version.core and version.version != 'master':
+            return
+
         if os.path.isfile(version_output_file):
-            # We already have this download on disk!
-            # We have to decide what to do, download it again?
-            # For now, if it's core (and not master) we don't download. We trust them not to be re-releasing versions.
-            if version.core and version.version != 'master':
-                return
-            # If it's not core, we always download as we can't trust it won't have changed.
             os.remove(version_output_file)
 
-        # delete anything currently on disk - we think it's old
-        # (or it's possible it's a half complete download and we want to start again)
         if os.path.isdir(version_output_dir):
             shutil.rmtree(version_output_dir)
 
-        # download contents and save to disk
         os.makedirs(version_output_dir)
         response = requests.get(version.download_url, allow_redirects=True)
         response.raise_for_status()
