@@ -14,11 +14,9 @@ setup(
     packages=find_packages(),
     long_description=long_description,
     long_description_content_type='text/markdown',
-    scripts=['cli.py'],
     install_requires=[
       'ocdsextensionregistry>=0.0.3',
       'polib',
-      'python-decouple',
       'requests',
     ],
     extras_require={
@@ -32,4 +30,6 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3.6',
     ],
+    entry_points='''[console_scripts]
+ocdsextensionsdatacollector = ocdsextensionsdatacollector.cli.__main__:main''',
 )

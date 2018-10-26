@@ -17,24 +17,18 @@ STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
 
 class Runner:
-
-    def __init__(self, sample=False, output_directory=None,
+    def __init__(self, output_directory, limit=None, tx_api_key=None,
                  extensions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extensions.csv',  # noqa
                  extension_versions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
                 ):
-        self.output_directory = output_directory or \
-                                os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'output_dir')
+        self.output_directory = output_directory
+        self.limit = limit
+        self.tx_api_key = tx_api_key
         self.extensions_data = extensions_data
         self.extension_versions_data = extension_versions_data
-        self.sample = sample
         self.out = None
         if not os.path.isdir(self.output_directory):
             os.mkdir(self.output_directory)
-
-        try:
-            self.tx_api_key = config('TX_API_KEY')
-        except UndefinedValueError:
-            self.tx_api_key = None
 
     def run(self):
         self.out = {
@@ -44,7 +38,7 @@ class Runner:
         registry = ExtensionRegistry(self.extension_versions_data, self.extensions_data)
 
         for version in registry:
-            if self.sample and len(self.out['extensions']) >= 5:
+            if self.limit and len(self.out['extensions']) >= self.limit:
                 continue
 
             self._add_basic_info_to_output(version)
