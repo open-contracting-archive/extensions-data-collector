@@ -160,8 +160,8 @@ def list_lang_dirs(output_dir):
     langs = []
     translations_dir = output_dir / locale_dir
     for subdir in translations_dir.iterdir():
-        if (translations_dir / subdir).is_dir():
-            langs.append(subdir)
+        if subdir.is_dir():
+            langs.append(subdir.name)
 
     return langs
 

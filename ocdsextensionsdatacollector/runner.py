@@ -5,7 +5,7 @@ import json
 import os
 import shutil
 import zipfile
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from pathlib import Path
 
 import requests
@@ -73,15 +73,15 @@ class Runner:
             'date': version.date,
             'base_url': version.base_url,
             'download_url': version.download_url,
-            'release_schema': None,
-            'record_package_schema': None,
-            'release_package_schema': None,
+            'release_schema': {},  # language map
+            'record_package_schema': {},  # language map
+            'release_package_schema': {},  # language map
             'errors': [],
             'codelists': {},
-            'docs': {},
-            'readme': None,
-            'name': {},
-            'description': {},
+            'docs': defaultdict(dict),  # language maps
+            'readme': {},  # language map
+            'name': {},  # language map
+            'description': {},  # language map
             'standard_compatibility': {},
         }
 
@@ -158,10 +158,7 @@ class Runner:
             with release_schema_filename.open() as f:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                    file_json = json.load(f)
-                    if 'release_schema' not in version_obj:
-                        version_obj['release_schema'] = {}
-                    version_obj['release_schema'][language] = file_json
+                    version_obj['release_schema'][language] = json.load(f)
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse release-schema.json: ' + e.msg
@@ -175,10 +172,7 @@ class Runner:
             with record_package_schema_filename.open() as f:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                    file_json = json.load(f)
-                    if 'record_package_schema' not in version_obj:
-                        version_obj['record_package_schema'] = {}
-                    version_obj['record_package_schema'][language] = file_json
+                    version_obj['record_package_schema'][language] = json.load(f)
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse record-package-schema.json: ' + e.msg
@@ -193,10 +187,7 @@ class Runner:
             with release_package_schema_filename.open() as f:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                    file_json = json.load(f)
-                    if 'release_package_schema' not in version_obj:
-                        version_obj['release_package_schema'] = {}
-                    version_obj['release_package_schema'][language] = file_json
+                    version_obj['release_package_schema'][language] = json.load(f)
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + e.msg
@@ -207,12 +198,12 @@ class Runner:
 
         codelists_dir_name = version_output_dir / 'codelists'
         if codelists_dir_name.is_dir():
-            names = [f for f in codelists_dir_name.iterdir() if (codelists_dir_name / f).is_file()]
-            for name in names:
+            paths = [f for f in codelists_dir_name.iterdir() if f.is_file()]
+            for path in paths:
                 data = {'items': {}, 'fieldnames': OrderedDict()}
 
                 existing_items = self.out.get('extensions', {}).get(version.id, {}).get(
-                    'versions', {}).get(version.version, {}).get('codelists', {}).get(name)
+                    'versions', {}).get(version.version, {}).get('codelists', {}).get(path.name)
 
                 if existing_items is not None:
                     if existing_items.get('items') is not None:
@@ -220,7 +211,7 @@ class Runner:
                     if existing_items.get('fieldnames') is not None:
                         data['fieldnames'] = existing_items['fieldnames']
 
-                with (codelists_dir_name / name).open() as f:
+                with path.open() as f:
                     reader = csv.DictReader(f)
 
                     # Extract the csv headers from the EN version to use as canonical
@@ -258,20 +249,17 @@ class Runner:
                                 except KeyError:
                                     data['items'][code] = {language: row}
 
-                self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
+                self.out['extensions'][version.id]['versions'][version.version]['codelists'][path.name] = data
 
     def _add_information_from_download_to_output_record_docs(self, version, language='en'):
         version_output_dir = self._get_version_output_dir(version, language)
 
         docs_dir_name = version_output_dir / 'docs'
         if docs_dir_name.is_dir():
-            names = [f for f in docs_dir_name.iterdir() if (docs_dir_name / f).is_file()]
-            for name in names:
-                with (docs_dir_name / name).open() as f:
-                    docs_obj = self.out['extensions'][version.id]['versions'][version.version]['docs']
-                    if name not in docs_obj:
-                        docs_obj[name] = {}
-                    docs_obj[name][language] = f.read()
+            for path in docs_dir_name.iterdir():
+                if path.is_file():
+                    with path.open() as f:
+                        self.out['extensions'][version.id]['versions'][version.version]['docs'][path.name][language] = f.read()  # noqa
 
     def _add_information_from_download_to_output_record_readme(self, version, language='en'):
         version_output_dir = self._get_version_output_dir(version, language)
@@ -279,10 +267,7 @@ class Runner:
         readme_filename = version_output_dir / 'README.md'
         if readme_filename.is_file():
             with readme_filename.open() as f:
-                version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                if 'readme' not in version_obj:
-                    version_obj['readme'] = {}
-                version_obj['readme'][language] = f.read()
+                self.out['extensions'][version.id]['versions'][version.version]['readme'][language] = f.read()
 
     def _get_version_output_dir(self, version, language):
         if language == 'en':
