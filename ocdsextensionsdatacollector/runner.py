@@ -289,7 +289,6 @@ class Runner:
                     version_obj['readme'] = {}
                 version_obj['readme'][language] = {
                     'content': f.read(),
-                    'type': 'markdown',
                 }
 
     def _get_version_output_dir(self, version, language):
