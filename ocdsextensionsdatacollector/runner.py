@@ -159,10 +159,9 @@ class Runner:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(f)
-                    if version_obj['release_schema'] is not None:
-                        version_obj['release_schema'][language] = file_json
-                    else:
-                        version_obj['release_schema'] = {language: file_json}
+                    if 'release_schema' not in version_obj:
+                        version_obj['release_schema'] = {}
+                    version_obj['release_schema'][language] = file_json
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse release-schema.json: ' + e.msg
@@ -177,10 +176,9 @@ class Runner:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(f)
-                    if version_obj['record_package_schema'] is not None:
-                        version_obj['record_package_schema'][language] = file_json
-                    else:
-                        version_obj['record_package_schema'] = {language: file_json}
+                    if 'record_package_schema' not in version_obj:
+                        version_obj['record_package_schema'] = {}
+                    version_obj['record_package_schema'][language] = file_json
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse record-package-schema.json: ' + e.msg
@@ -196,10 +194,9 @@ class Runner:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(f)
-                    if version_obj['release_package_schema'] is not None:
-                        version_obj['release_package_schema'][language] = file_json
-                    else:
-                        version_obj['release_package_schema'] = {language: file_json}
+                    if 'release_package_schema' not in version_obj:
+                        version_obj['release_package_schema'] = {}
+                    version_obj['release_package_schema'][language] = file_json
                 except json.decoder.JSONDecodeError as e:
                     version_obj['errors'].append({
                         'message': 'Error while trying to parse release-package-schema.json: ' + e.msg
