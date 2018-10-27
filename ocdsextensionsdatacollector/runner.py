@@ -274,9 +274,7 @@ class Runner:
                     docs_obj = self.out['extensions'][version.id]['versions'][version.version]['docs']
                     if name not in docs_obj:
                         docs_obj[name] = {}
-                    docs_obj[name][language] = {
-                        'content': f.read(),
-                    }
+                    docs_obj[name][language] = f.read()
 
     def _add_information_from_download_to_output_record_readme(self, version, language='en'):
         version_output_dir = self._get_version_output_dir(version, language)
@@ -287,9 +285,7 @@ class Runner:
                 version_obj = self.out['extensions'][version.id]['versions'][version.version]
                 if 'readme' not in version_obj:
                     version_obj['readme'] = {}
-                version_obj['readme'][language] = {
-                    'content': f.read(),
-                }
+                version_obj['readme'][language] = f.read()
 
     def _get_version_output_dir(self, version, language):
         if language == 'en':
