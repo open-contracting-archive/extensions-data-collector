@@ -61,9 +61,9 @@ def codelists_po(output_dir, extension_id, version):
             print('Could not parse CSV for {}/{}: {}'.format(extension_id, version, e))
 
         output_file = po_dir / 'codelists.po'
-        with output_file.open('wb') as outfile:
+        with output_file.open('wb') as f:
 
-            write_po(outfile, catalog, width=76,
+            write_po(f, catalog, width=76,
                      no_location=False,
                      omit_header=False,
                      sort_output=False,
@@ -94,9 +94,9 @@ def schema_po(output_dir, extension_id, version):
                     auto_comments=comments, context=context)
 
     output_file = po_dir / 'schema.po'
-    with output_file.open('wb') as outfile:
+    with output_file.open('wb') as f:
 
-        write_po(outfile, catalog, width=76,
+        write_po(f, catalog, width=76,
                  no_location=False,
                  omit_header=False,
                  sort_output=False,
