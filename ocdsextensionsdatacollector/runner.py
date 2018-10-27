@@ -1,12 +1,14 @@
-import os
-import json
-import requests
-import zipfile
-import io
-import shutil
 import copy
 import csv
+import io
+import json
+import os
+import shutil
+import zipfile
 from collections import OrderedDict
+from pathlib import Path
+
+import requests
 
 from ocdsextensionregistry import ExtensionRegistry
 from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
@@ -20,14 +22,14 @@ class Runner:
                  extensions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extensions.csv',  # noqa
                  extension_versions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
                 ):
-        self.output_directory = output_directory
+        self.output_directory = Path(output_directory)
         self.limit = limit
         self.tx_api_key = tx_api_key
         self.extensions_data = extensions_data
         self.extension_versions_data = extension_versions_data
         self.out = None
-        if not os.path.isdir(self.output_directory):
-            os.mkdir(self.output_directory)
+        if not self.output_directory.is_dir():
+            self.output_directory.mkdir()
 
     def run(self):
         self.out = {
@@ -89,20 +91,20 @@ class Runner:
             extensions_obj[version.id]['versions'][version.version]['standard_compatibility'][standard_version] = False
 
     def _download_version(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        version_output_file = os.path.join(self.output_directory, version.id, version.version + '-status.json')
+        version_output_dir = self.output_directory / version.id / version.version
+        version_output_file = self.output_directory / version.id / '{}-status.json'.format(version.version)
 
         # Trust that frozen versions of core extensions don't change.
-        if os.path.isfile(version_output_file) and os.path.isdir(version_output_dir) and version.core and version.version != 'master':
+        if version_output_file.is_file() and version_output_dir.is_dir() and version.core and version.version != 'master':
             return
 
-        if os.path.isfile(version_output_file):
-            os.remove(version_output_file)
+        if version_output_file.is_file():
+            version_output_file.unlink()
 
-        if os.path.isdir(version_output_dir):
+        if version_output_dir.is_dir():
             shutil.rmtree(version_output_dir)
 
-        os.makedirs(version_output_dir)
+        version_output_dir.mkdir(parents=True)
         response = requests.get(version.download_url, allow_redirects=True)
         response.raise_for_status()
         version_zipfile = zipfile.ZipFile(io.BytesIO(response.content))
@@ -110,9 +112,9 @@ class Runner:
         start = len(names[0])
         for name in names[1:]:
             if name[-1:] == '/':
-                os.makedirs(os.path.join(version_output_dir, name[start:]))
+                (version_output_dir / name[start:]).mkdir(parents=True)
             else:
-                with open(os.path.join(version_output_dir, name[start:]), "wb") as outfile:
+                with (version_output_dir / name[start:]).open('wb') as outfile:
                     outfile.write(version_zipfile.read(name))
 
         # Finally, write status file to indicate a successful download
@@ -121,7 +123,7 @@ class Runner:
             # and need to know if something on disk is from the old or new code.
             'disk_data_layout_version': 1
         }
-        with open(version_output_file, "w") as outfile:
+        with version_output_file.open('w') as outfile:
             json.dump(out_status, outfile, indent=4)
 
     def _add_information_from_download_to_output(self, version):
@@ -134,13 +136,9 @@ class Runner:
         self._add_information_from_download_to_output_record_readme(version)
 
     def _add_information_from_download_to_output_extension_json(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
-        with open(os.path.join(version_output_dir, "extension.json")) as infile:
+        with (version_output_dir / 'extension.json').open() as infile:
             extension_json = self._normalise_extension_json(json.load(infile), language=language)
 
             for field in ('name', 'description'):
@@ -155,15 +153,11 @@ class Runner:
                         True
 
     def _add_information_from_download_to_output_release_schema(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
-        release_schema_filename = os.path.join(version_output_dir, "release-schema.json")
-        if os.path.isfile(release_schema_filename):
-            with open(release_schema_filename) as infile:
+        release_schema_filename = version_output_dir / 'release-schema.json'
+        if release_schema_filename.is_file():
+            with release_schema_filename.open() as infile:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
@@ -179,15 +173,11 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_record_package_schema(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
-        record_package_schema_filename = os.path.join(version_output_dir, "record-package-schema.json")
-        if os.path.isfile(record_package_schema_filename):
-            with open(record_package_schema_filename) as infile:
+        record_package_schema_filename = version_output_dir / 'record-package-schema.json'
+        if record_package_schema_filename.is_file():
+            with record_package_schema_filename.open() as infile:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
@@ -204,16 +194,12 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_release_package_schema(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
-        release_package_schema_filename = os.path.join(version_output_dir, "release-package-schema.json")
+        release_package_schema_filename = version_output_dir / 'release-package-schema.json'
 
-        if os.path.isfile(release_package_schema_filename):
-            with open(release_package_schema_filename) as infile:
+        if release_package_schema_filename.is_file():
+            with release_package_schema_filename.open() as infile:
                 try:
                     version_obj = self.out['extensions'][version.id]['versions'][version.version]
                     file_json = json.load(infile)
@@ -229,18 +215,12 @@ class Runner:
                     })
 
     def _add_information_from_download_to_output_record_codelists(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
-        codelists_dir_name = os.path.join(version_output_dir, "codelists")
-        if os.path.isdir(codelists_dir_name):
-
-            names = [f for f in os.listdir(codelists_dir_name) if os.path.isfile(os.path.join(codelists_dir_name, f))]
+        codelists_dir_name = version_output_dir / 'codelists'
+        if codelists_dir_name.is_dir():
+            names = [f for f in codelists_dir_name.iterdir() if (codelists_dir_name / f).is_file()]
             for name in names:
-
                 data = {'items': {}, 'fieldnames': OrderedDict()}
 
                 existing_items = self.out.get('extensions', {}).get(version.id, {}).get(
@@ -252,7 +232,7 @@ class Runner:
                     if existing_items.get('fieldnames') is not None:
                         data['fieldnames'] = existing_items['fieldnames']
 
-                with open(os.path.join(codelists_dir_name, name), 'r') as csvfile:
+                with (codelists_dir_name / name).open() as csvfile:
                     reader = csv.DictReader(csvfile)
 
                     # Extract the csv headers from the EN version to use as canonical
@@ -296,30 +276,28 @@ class Runner:
 
                 self.out['extensions'][version.id]['versions'][version.version]['codelists'][name] = data
 
-    def _add_information_from_download_to_output_record_docs(self, version):
-        version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        docs_dir_name = os.path.join(version_output_dir, "docs")
-        if os.path.isdir(docs_dir_name):
-            names = [f for f in os.listdir(docs_dir_name) if os.path.isfile(os.path.join(docs_dir_name, f))]
+    def _add_information_from_download_to_output_record_docs(self, version, language='en'):
+        version_output_dir = self._get_version_output_dir(version, language)
+
+        docs_dir_name = version_output_dir / 'docs'
+        if docs_dir_name.is_dir():
+            names = [f for f in docs_dir_name.iterdir() if (docs_dir_name / f).is_file()]
             for name in names:
-                with open(os.path.join(docs_dir_name, name), 'r') as docfile:
-                    self.out['extensions'][version.id]['versions'][version.version]['docs'][name] = {
-                        "en": {
-                            "content": docfile.read()
-                        }
+                with (docs_dir_name / name).open() as docfile:
+                    docs_object = self.out['extensions'][version.id]['versions'][version.version]['docs']
+                    doc_object = docs_object.get(name) or {}
+                    docs_object[name] = docs_object
+                    docs_object[language] = {
+                        "content": docfile.read()
                     }
 
     def _add_information_from_download_to_output_record_readme(self, version, language='en'):
-        if language == 'en':
-            version_output_dir = os.path.join(self.output_directory, version.id, version.version)
-        else:
-            version_output_dir = os.path.join(
-                self.output_directory, locale_dir, language, 'TRANSLATIONS', version.id, version.version)
+        version_output_dir = self._get_version_output_dir(version, language)
 
         for name in ['README.md', 'readme.md']:
-            readme_file_name = os.path.join(version_output_dir, name)
-            if os.path.isfile(readme_file_name):
-                with open(readme_file_name, 'r') as readmefile:
+            readme_file_name = version_output_dir / name
+            if readme_file_name.is_file():
+                with readme_file_name.open() as readmefile:
                     version_object = self.out['extensions'][version.id]['versions'][version.version]
                     readme_object = version_object.get('readme') or {}
                     version_object['readme'] = readme_object
@@ -328,6 +306,12 @@ class Runner:
                         "type": "markdown"
                     }
                     return
+
+    def _get_version_output_dir(self, version, language):
+        if language == 'en':
+            return self.output_directory / version.id / version.version
+        else:
+            return self.output_directory / locale_dir / language / 'TRANSLATIONS' / version.id / version.version
 
     # This def is a candidate for pushing upstream to extension_registry.py
     def _normalise_extension_json(self, in_extension_json, language='en'):
@@ -401,14 +385,14 @@ class Runner:
             # Add translations to self.out
             for language in languages:
                 if language != 'en':
-                    self._add_information_from_download_to_output_record_codelists(extension, language)
                     self._add_information_from_download_to_output_extension_json(extension, language)
                     self._add_information_from_download_to_output_release_schema(extension, language)
                     self._add_information_from_download_to_output_record_package_schema(extension, language)
                     self._add_information_from_download_to_output_release_package_schema(extension, language)
+                    self._add_information_from_download_to_output_record_codelists(extension, language)
+                    self._add_information_from_download_to_output_record_docs(extension, language)
                     self._add_information_from_download_to_output_record_readme(extension, language)
-                    # TODO: docs
 
     def _write_output(self):
-        with open(os.path.join(self.output_directory, "data.json"), "w") as outfile:
+        with (self.output_directory / 'data.json').open('w') as outfile:
             json.dump(self.out, outfile, indent=4)
