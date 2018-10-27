@@ -292,18 +292,16 @@ class Runner:
     def _add_information_from_download_to_output_record_readme(self, version, language='en'):
         version_output_dir = self._get_version_output_dir(version, language)
 
-        for name in ['README.md', 'readme.md']:
-            readme_file_name = version_output_dir / name
-            if readme_file_name.is_file():
-                with readme_file_name.open() as readmefile:
-                    version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                    readme_obj = version_obj.get('readme') or {}
-                    version_obj['readme'] = readme_obj
-                    readme_obj[language] = {
-                        'content': readmefile.read(),
-                        'type': 'markdown',
-                    }
-                    return
+        readme_file_name = version_output_dir / 'README.md'
+        if readme_file_name.is_file():
+            with readme_file_name.open() as readmefile:
+                version_obj = self.out['extensions'][version.id]['versions'][version.version]
+                readme_obj = version_obj.get('readme') or {}
+                version_obj['readme'] = readme_obj
+                readme_obj[language] = {
+                    'content': readmefile.read(),
+                    'type': 'markdown',
+                }
 
     def _get_version_output_dir(self, version, language):
         if language == 'en':
