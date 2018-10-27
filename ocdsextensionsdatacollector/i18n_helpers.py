@@ -222,7 +222,7 @@ def delete_tx_resources(output_dir, extension, version, tx_api_key):
             if filename.endswith('.po'):
                 resource_slug = make_resource_slug(extension, version, filename)
                 tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
-                print("Deleting {}".format(resource_slug))
+                print('Deleting {}'.format(resource_slug))
                 try:
                     tx_api.delete_resource(tx_project, resource_slug)
                 except TransifexAPIException:

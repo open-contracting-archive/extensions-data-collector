@@ -47,10 +47,8 @@ class Runner:
             self._add_information_from_download_to_output(version)
 
         for extension_id in self.out['extensions'].keys():
-            self._add_information_from_version_to_extension(
-                extension_id,
-                self._get_main_version_for_extension(extension_id)
-            )
+            main_version = self._get_main_version_for_extension(extension_id)
+            self._add_information_from_version_to_extension(extension_id, main_version)
             self._add_version_key_lists_to_extension(extension_id)
 
         if self.tx_api_key is not None:
@@ -139,13 +137,13 @@ class Runner:
         version_output_dir = self._get_version_output_dir(version, language)
 
         with (version_output_dir / 'extension.json').open() as infile:
-            extension_json = self._normalise_extension_json(json.load(infile), language=language)
+            extension_json = self._normalize_extension_json(json.load(infile), language=language)
 
             for field in ('name', 'description'):
-                version_object = self.out['extensions'][version.id]['versions'][version.version]
-                language_object = version_object.get(field) or {}
-                version_object[field] = language_object
-                language_object[language] = extension_json[field][language]
+                version_obj = self.out['extensions'][version.id]['versions'][version.version]
+                language_obj = version_obj.get(field) or {}
+                version_obj[field] = language_obj
+                language_obj[language] = extension_json[field][language]
 
             for c_v in STANDARD_COMPATIBILITY_VERSIONS:
                 if c_v in extension_json['compatibility']:
@@ -284,11 +282,11 @@ class Runner:
             names = [f for f in docs_dir_name.iterdir() if (docs_dir_name / f).is_file()]
             for name in names:
                 with (docs_dir_name / name).open() as docfile:
-                    docs_object = self.out['extensions'][version.id]['versions'][version.version]['docs']
-                    doc_object = docs_object.get(name) or {}
-                    docs_object[name] = docs_object
-                    docs_object[language] = {
-                        "content": docfile.read()
+                    docs_obj = self.out['extensions'][version.id]['versions'][version.version]['docs']
+                    doc_obj = docs_obj.get(name) or {}
+                    docs_obj[name] = docs_obj
+                    docs_obj[language] = {
+                        'content': docfile.read(),
                     }
 
     def _add_information_from_download_to_output_record_readme(self, version, language='en'):
@@ -298,12 +296,12 @@ class Runner:
             readme_file_name = version_output_dir / name
             if readme_file_name.is_file():
                 with readme_file_name.open() as readmefile:
-                    version_object = self.out['extensions'][version.id]['versions'][version.version]
-                    readme_object = version_object.get('readme') or {}
-                    version_object['readme'] = readme_object
-                    readme_object[language] = {
-                        "content": readmefile.read(),
-                        "type": "markdown"
+                    version_obj = self.out['extensions'][version.id]['versions'][version.version]
+                    readme_obj = version_obj.get('readme') or {}
+                    version_obj['readme'] = readme_obj
+                    readme_obj[language] = {
+                        'content': readmefile.read(),
+                        'type': 'markdown',
                     }
                     return
 
@@ -314,7 +312,7 @@ class Runner:
             return self.output_directory / locale_dir / language / 'TRANSLATIONS' / version.id / version.version
 
     # This def is a candidate for pushing upstream to extension_registry.py
-    def _normalise_extension_json(self, in_extension_json, language='en'):
+    def _normalize_extension_json(self, in_extension_json, language='en'):
         out_extension_json = copy.deepcopy(in_extension_json)
 
         if out_extension_json['name'] and isinstance(out_extension_json['name'], str):
@@ -341,11 +339,10 @@ class Runner:
             raise Exception
 
     def _add_information_from_version_to_extension(self, extension_id, version_id):
-        self.out['extensions'][extension_id]['main_version'] = version_id
-        self.out['extensions'][extension_id]['name'] = \
-            self.out['extensions'][extension_id]['versions'][version_id]['name']
-        self.out['extensions'][extension_id]['description'] = \
-            self.out['extensions'][extension_id]['versions'][version_id]['description']
+        extension_obj = self.out['extensions'][extension_id]
+        extension_obj['main_version'] = version_id
+        extension_obj['name'] = extension_obj['versions'][version_id]['name']
+        extension_obj['description'] = extension_obj['versions'][version_id]['description']
 
     def _add_version_key_lists_to_extension(self, extension_id):
         all_version_keys = list(self.out['extensions'][extension_id]['versions'].keys())
@@ -356,7 +353,6 @@ class Runner:
         self.out['extensions'][extension_id]['list_version_keys_all'] = all_version_keys
 
     def _do_translations(self, registry):
-
         # Make EN .po files for all extension docs
         docs_po(self.output_directory)
 
