@@ -141,9 +141,9 @@ class Runner:
 
             for field in ('name', 'description'):
                 version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                language_obj = version_obj.get(field) or {}
-                version_obj[field] = language_obj
-                language_obj[language] = extension_json[field][language]
+                if field not in version_obj:
+                    version_obj[field] = {}
+                version_obj[field][language] = extension_json[field][language]
 
             for c_v in STANDARD_COMPATIBILITY_VERSIONS:
                 if c_v in extension_json['compatibility']:
@@ -272,9 +272,9 @@ class Runner:
             for name in names:
                 with (docs_dir_name / name).open() as f:
                     docs_obj = self.out['extensions'][version.id]['versions'][version.version]['docs']
-                    doc_obj = docs_obj.get(name) or {}
-                    docs_obj[name] = docs_obj
-                    docs_obj[language] = {
+                    if name not in docs_obj:
+                        docs_obj[name] = {}
+                    docs_obj[name][language] = {
                         'content': f.read(),
                     }
 
@@ -285,9 +285,9 @@ class Runner:
         if readme_filename.is_file():
             with readme_filename.open() as f:
                 version_obj = self.out['extensions'][version.id]['versions'][version.version]
-                readme_obj = version_obj.get('readme') or {}
-                version_obj['readme'] = readme_obj
-                readme_obj[language] = {
+                if 'readme' not in version_obj:
+                    version_obj['readme'] = {}
+                version_obj['readme'][language] = {
                     'content': f.read(),
                     'type': 'markdown',
                 }
