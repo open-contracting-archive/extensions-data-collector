@@ -18,13 +18,14 @@ class Runner:
         self.extensions_data = extensions_data
         self.extension_versions_data = extension_versions_data
         self.out = None
-        if not self.output_directory.is_dir():
-            self.output_directory.mkdir()
 
     def run(self):
         self.out = {
             'extensions': {}
         }
+
+        if not self.output_directory.is_dir():
+            self.output_directory.mkdir()
 
         registry = ExtensionRegistry(self.extension_versions_data, self.extensions_data)
 

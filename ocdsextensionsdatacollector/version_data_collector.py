@@ -5,6 +5,7 @@ import json
 import shutil
 import zipfile
 from collections import OrderedDict, defaultdict
+from pathlib import Path
 
 import requests
 
@@ -15,8 +16,11 @@ STANDARD_COMPATIBILITY_VERSIONS = ['1.1']
 
 class VersionDataCollector:
     def __init__(self, output_directory, version):
-        self.output_directory = output_directory
+        self.output_directory = Path(output_directory)
         self.version = version
+        self.out = None
+
+    def collect(self):
         self.out = {
             'date': self.version.date,
             'base_url': self.version.base_url,
@@ -25,7 +29,7 @@ class VersionDataCollector:
             'record_package_schema': {},  # language map
             'release_package_schema': {},  # language map
             'errors': [],
-            'codelists': {},
+            'codelists': defaultdict(dict),  # filename: fields
             'docs': defaultdict(dict),  # filename: language map
             'readme': {},  # language map
             'name': {},  # language map
@@ -33,7 +37,6 @@ class VersionDataCollector:
             'standard_compatibility': {},
         }
 
-    def collect(self):
         self._add_registry_metadata_to_output()
         self._download_version()
         self._add_information_from_download_to_output()
@@ -81,15 +84,14 @@ class VersionDataCollector:
             json.dump(out_status, f, indent=4)
 
     def _add_information_from_download_to_output(self):
-        self._add_information_from_download_to_output_extension_json()
-        self._add_information_from_download_to_output_release_schema()
-        self._add_information_from_download_to_output_record_package_schema()
-        self._add_information_from_download_to_output_release_package_schema()
-        self._add_information_from_download_to_output_record_codelists()
-        self._add_information_from_download_to_output_record_docs()
-        self._add_information_from_download_to_output_record_readme()
+        self._add_extension_json()
+        self._add_readme()
+        self._add_docs()
+        self._add_codelists()
+        for basename in ('record-package-schema.json', 'release-package-schema.json', 'release-schema.json'):
+            self._add_schema(basename)
 
-    def _add_information_from_download_to_output_extension_json(self, language='en'):
+    def _add_extension_json(self, language='en'):
         version_output_dir = self._get_version_output_dir(language)
 
         with (version_output_dir / 'extension.json').open() as f:
@@ -100,65 +102,34 @@ class VersionDataCollector:
 
             for c_v in STANDARD_COMPATIBILITY_VERSIONS:
                 if c_v in extension_json['compatibility']:
-                    self.out['standard_compatibility'][c_v] = \
-                        True
+                    self.out['standard_compatibility'][c_v] = True
 
-    def _add_information_from_download_to_output_release_schema(self, language='en'):
+    def _add_schema(self, basename, language='en'):
         version_output_dir = self._get_version_output_dir(language)
 
-        release_schema_filename = version_output_dir / 'release-schema.json'
-        if release_schema_filename.is_file():
-            with release_schema_filename.open() as f:
+        path = version_output_dir / basename
+        if path.is_file():
+            with path.open() as f:
                 try:
-                    self.out['release_schema'][language] = json.load(f)
+                    self.out[path.stem.replace('-', '_')][language] = json.load(f)
                 except json.decoder.JSONDecodeError as e:
                     self.out['errors'].append({
-                        'message': 'Error while trying to parse release-schema.json: ' + e.msg
+                        'message': 'Error while trying to parse {}: {}'.format(path.name, e.msg),
                     })
 
-    def _add_information_from_download_to_output_record_package_schema(self, language='en'):
-        version_output_dir = self._get_version_output_dir(language)
-
-        record_package_schema_filename = version_output_dir / 'record-package-schema.json'
-        if record_package_schema_filename.is_file():
-            with record_package_schema_filename.open() as f:
-                try:
-                    self.out['record_package_schema'][language] = json.load(f)
-                except json.decoder.JSONDecodeError as e:
-                    self.out['errors'].append({
-                        'message': 'Error while trying to parse record-package-schema.json: ' + e.msg
-                    })
-
-    def _add_information_from_download_to_output_release_package_schema(self, language='en'):
-        version_output_dir = self._get_version_output_dir(language)
-
-        release_package_schema_filename = version_output_dir / 'release-package-schema.json'
-
-        if release_package_schema_filename.is_file():
-            with release_package_schema_filename.open() as f:
-                try:
-                    self.out['release_package_schema'][language] = json.load(f)
-                except json.decoder.JSONDecodeError as e:
-                    self.out['errors'].append({
-                        'message': 'Error while trying to parse release-package-schema.json: ' + e.msg
-                    })
-
-    def _add_information_from_download_to_output_record_codelists(self, language='en'):
+    def _add_codelists(self, language='en'):
         version_output_dir = self._get_version_output_dir(language)
 
         codelists_dir_name = version_output_dir / 'codelists'
         if codelists_dir_name.is_dir():
             paths = [f for f in codelists_dir_name.iterdir() if f.is_file()]
             for path in paths:
-                data = {'items': {}, 'fieldnames': OrderedDict()}
+                data = self.out['codelists'][path.name]
 
-                existing_items = self.out['codelists'].get(path.name)
-
-                if existing_items is not None:
-                    if existing_items.get('items') is not None:
-                        data['items'] = existing_items['items']
-                    if existing_items.get('fieldnames') is not None:
-                        data['fieldnames'] = existing_items['fieldnames']
+                if 'items' not in data:
+                    data['items'] = {}
+                if 'fieldnames' not in data:
+                    data['fieldnames'] = OrderedDict()
 
                 with path.open() as f:
                     reader = csv.DictReader(f)
@@ -166,18 +137,15 @@ class VersionDataCollector:
                     # Extract the csv headers from the EN version to use as canonical
                     # keys to reference the codes
                     if language == 'en':
-                        fieldnames = reader.fieldnames
-                        for fieldname in fieldnames:
-                            try:
-                                data['fieldnames'][fieldname]['en'] = fieldname
-                            except KeyError:
-                                data['fieldnames'][fieldname] = {'en': fieldname}
+                        for fieldname in reader.fieldnames:
+                            if fieldname not in data['fieldnames']:
+                                data['fieldnames'][fieldname] = {}
+                            data['fieldnames'][fieldname]['en'] = fieldname
                     else:
                         # And assume the translated headers will be in the same order as EN
-                        fieldnames = reader.fieldnames
                         en_fieldnames = list(data['fieldnames'].keys())
 
-                        for index, fieldname in enumerate(fieldnames):
+                        for index, fieldname in enumerate(reader.fieldnames):
                             key = en_fieldnames[index]
                             data['fieldnames'][key][language] = fieldname
 
@@ -193,14 +161,11 @@ class VersionDataCollector:
                         if code_header in row:
                             code = row[code_header]
                             if code:
-                                try:
-                                    data['items'][code][language] = row
-                                except KeyError:
-                                    data['items'][code] = {language: row}
+                                if code not in data['items']:
+                                    data['items'][code] = {}
+                                data['items'][code][language] = row
 
-                self.out['codelists'][path.name] = data
-
-    def _add_information_from_download_to_output_record_docs(self, language='en'):
+    def _add_docs(self, language='en'):
         version_output_dir = self._get_version_output_dir(language)
 
         docs_dir_name = version_output_dir / 'docs'
@@ -210,7 +175,7 @@ class VersionDataCollector:
                     with path.open() as f:
                         self.out['docs'][path.name][language] = f.read()  # noqa
 
-    def _add_information_from_download_to_output_record_readme(self, language='en'):
+    def _add_readme(self, language='en'):
         version_output_dir = self._get_version_output_dir(language)
 
         readme_filename = version_output_dir / 'README.md'
