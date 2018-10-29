@@ -1,12 +1,13 @@
 import glob
 import io
 import os
-import polib
 import shutil
-import sphinx
 from _csv import Error as CSVError
 from contextlib import redirect_stdout, redirect_stderr
+from pathlib import Path
 
+import polib
+import sphinx
 from babel.messages.catalog import Catalog
 from babel.messages.extract import extract_from_dir
 from babel.messages.pofile import write_po
@@ -32,15 +33,12 @@ tx_project = 'ocds-extensions'
 
 def codelists_po(output_dir, extension_id, version):
 
-    codelists_dir = os.path.join(
-        output_dir, extension_id, version, 'codelists')
+    codelists_dir = output_dir / extension_id / version / 'codelists'
 
-    if os.path.isdir(codelists_dir):
-
-        po_dir = os.path.join(output_dir, locale_dir,
-                              en_dir, extension_id, version)
-        if not os.path.isdir(po_dir):
-            os.makedirs(po_dir, exist_ok=True)
+    if codelists_dir.is_dir():
+        po_dir = output_dir / locale_dir / en_dir / extension_id / version
+        if not po_dir.is_dir():
+            po_dir.mkdir(parents=True, exist_ok=True)
 
         catalog = Catalog(project=None,
                           version=None,
@@ -53,8 +51,7 @@ def codelists_po(output_dir, extension_id, version):
         try:
             for filename, lineno, message, comments, context in messages:
 
-                filepath = os.path.normpath(
-                    os.path.join(codelists_dir, filename))
+                filepath = (codelists_dir / filename).resolve()
                 catalog.add(message, None, [(filepath, lineno)],
                             auto_comments=comments, context=context)
 
@@ -63,10 +60,10 @@ def codelists_po(output_dir, extension_id, version):
             #       rewrite codelist csvs as part of data-collector download process
             print('Could not parse CSV for {}/{}: {}'.format(extension_id, version, e))
 
-        output_file = os.path.join(po_dir, 'codelists.po')
-        with open(output_file, 'wb') as outfile:
+        output_file = po_dir / 'codelists.po'
+        with output_file.open('wb') as f:
 
-            write_po(outfile, catalog, width=76,
+            write_po(f, catalog, width=76,
                      no_location=False,
                      omit_header=False,
                      sort_output=False,
@@ -77,11 +74,10 @@ def codelists_po(output_dir, extension_id, version):
 def schema_po(output_dir, extension_id, version):
     # Extracts all json files into one schema.po file
     # (including extension.json)
-    schema_dir = os.path.join(output_dir, extension_id, version)
-    po_dir = os.path.join(output_dir, locale_dir,
-                          en_dir, extension_id, version)
-    if not os.path.isdir(po_dir):
-        os.makedirs(po_dir, exist_ok=True)
+    schema_dir = output_dir / extension_id / version
+    po_dir = output_dir / locale_dir / en_dir / extension_id / version
+    if not po_dir.is_dir():
+        po_dir.mkdir(parents=True, exist_ok=True)
 
     catalog = Catalog(project=None,
                       version=None,
@@ -93,14 +89,14 @@ def schema_po(output_dir, extension_id, version):
 
     for filename, lineno, message, comments, context in messages:
 
-        filepath = os.path.normpath(os.path.join(schema_dir, filename))
+        filepath = (schema_dir / filename).resolve()
         catalog.add(message, None, [(filepath, lineno)],
                     auto_comments=comments, context=context)
 
-    output_file = os.path.join(po_dir, 'schema.po')
-    with open(output_file, 'wb') as outfile:
+    output_file = po_dir / 'schema.po'
+    with output_file.open('wb') as f:
 
-        write_po(outfile, catalog, width=76,
+        write_po(f, catalog, width=76,
                  no_location=False,
                  omit_header=False,
                  sort_output=False,
@@ -109,16 +105,15 @@ def schema_po(output_dir, extension_id, version):
 
 
 def docs_po(output_directory):
-    current_directory = os.path.dirname(os.path.realpath(__file__))
-    temp_i18n_directory = os.path.join(output_directory, 'temp_i18n')
-    en_locale_directory = os.path.join(output_directory, locale_dir, en_dir)
-    sphinx_extraction_logs = os.path.join(
-        output_directory, 'sphinx_extraction_logs.txt')
+    current_directory = Path(os.path.dirname(os.path.realpath(__file__)))
+    temp_i18n_directory = output_directory / 'temp_i18n'
+    en_locale_directory = output_directory / locale_dir / en_dir
+    sphinx_extraction_logs = output_directory / 'sphinx_extraction_logs.txt'
 
-    conf_directory = os.path.join(current_directory, 'sphinx_config')
+    conf_directory = current_directory / 'sphinx_config'
 
     # have to make index file for sphinx to work
-    index_file = os.path.join(conf_directory, 'index.md')
+    index_file = conf_directory / 'index.md'
     shutil.copy(index_file, output_directory)
 
     # sphinx already prints output to a file, this just stops output to console
@@ -130,18 +125,17 @@ def docs_po(output_directory):
                            '-c', conf_directory,
                            output_directory, temp_i18n_directory])
 
-    os.remove(os.path.join(output_directory, 'index.md'))
-    os.remove(os.path.join(temp_i18n_directory, 'index.pot'))
+    (output_directory / 'index.md').unlink()
+    (temp_i18n_directory / 'index.pot').unlink()
     try:
-        shutil.rmtree(os.path.join(temp_i18n_directory, 'locale'))
+        shutil.rmtree(temp_i18n_directory / 'locale')
     except FileNotFoundError:
         pass
 
     for full_file_path in glob.glob(temp_i18n_directory + '/**/README.pot', recursive=True):
-        new_relative_path = full_file_path[len(
-            temp_i18n_directory) + 1:].replace('README.pot', 'docs.po')
-        new_path = os.path.join(en_locale_directory, new_relative_path)
-        os.makedirs(os.path.dirname(new_path), exist_ok=True)
+        new_relative_path = full_file_path[len(temp_i18n_directory) + 1:].replace('README.pot', 'docs.po')
+        new_path = en_locale_directory / new_relative_path
+        new_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(full_file_path, new_path)
 
     shutil.rmtree(temp_i18n_directory)
@@ -164,10 +158,10 @@ def list_translated_languages(resource_slug, tx_api_key):
 
 def list_lang_dirs(output_dir):
     langs = []
-    translations_dir = os.path.join(output_dir, locale_dir)
-    for subdir in os.listdir(translations_dir):
-        if os.path.isdir(os.path.join(translations_dir, subdir)):
-            langs.append(subdir)
+    translations_dir = output_dir / locale_dir
+    for subdir in translations_dir.iterdir():
+        if subdir.is_dir():
+            langs.append(subdir.name)
 
     return langs
 
@@ -179,14 +173,11 @@ def get_from_transifex(output_dir, extension_id, version, po_file, tx_api_key):
     langs = list_translated_languages(resource_slug, tx_api_key)
     for lang in langs:
         if 'en' not in lang.lower():
-            save_path = os.path.join(
-                output_dir, locale_dir, lang, 'LC_MESSAGES',
-                extension_id, version)
-            if not os.path.isdir(save_path):
-                os.makedirs(save_path, exist_ok=True)
+            save_path = output_dir / locale_dir / lang / 'LC_MESSAGES' / extension_id / version
+            if not save_path.is_dir():
+                save_path.mkdir(parents=True, exist_ok=True)
 
-            tx_api.get_translation(
-                tx_project, resource_slug, lang, os.path.join(save_path, po_file))
+            tx_api.get_translation(tx_project, resource_slug, lang, save_path / po_file)
 
 
 def send_to_transifex(po_file, resource_slug, resource_name, tx_api_key):
@@ -194,37 +185,26 @@ def send_to_transifex(po_file, resource_slug, resource_name, tx_api_key):
     tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
     if tx_api.project_exists(tx_project):
         try:
-            tx_api.new_resource(
-                tx_project,
-                po_file,
-                resource_slug=resource_slug,
-                resource_name=resource_name)
+            tx_api.new_resource(tx_project, po_file, resource_slug=resource_slug, resource_name=resource_name)
         except TransifexAPIException:
-            tx_api.update_source_translation(
-                tx_project,
-                resource_slug,
-                po_file)
+            tx_api.update_source_translation(tx_project, resource_slug, po_file)
 
 
 def upload_po_files(output_dir, extension, version, tx_api_key):
-    source_po_dir = os.path.join(
-        output_dir, locale_dir, en_dir, extension, version)
+    source_po_dir = output_dir / locale_dir / en_dir / extension / version
 
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
-                resource_slug = make_resource_slug(
-                    extension, version, filename)
+                resource_slug = make_resource_slug(extension, version, filename)
                 resource_name = get_resource_name(extension, version, filename)
-                po_file_path = os.path.join(source_po_dir, filename)
+                po_file_path = source_po_dir / filename
 
-                send_to_transifex(po_file_path, resource_slug,
-                                  resource_name, tx_api_key)
+                send_to_transifex(po_file_path, resource_slug, resource_name, tx_api_key)
 
 
 def download_po_files(output_dir, extension, version, tx_api_key):
-    source_po_dir = os.path.join(
-        output_dir, locale_dir, en_dir, extension, version)
+    source_po_dir = output_dir / locale_dir / en_dir / extension / version
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
@@ -234,17 +214,15 @@ def download_po_files(output_dir, extension, version, tx_api_key):
 
 def delete_tx_resources(output_dir, extension, version, tx_api_key):
     # For cleanup/debugging purposes
-    source_po_dir = os.path.join(
-        output_dir, locale_dir, en_dir, extension, version)
+    source_po_dir = output_dir / locale_dir / en_dir / extension / version
 
     # files = ['release-schema.po', 'extension.po']
     for dir_name, subdirs, files in os.walk(source_po_dir):
         for filename in files:
             if filename.endswith('.po'):
-                resource_slug = make_resource_slug(
-                    extension, version, filename)
+                resource_slug = make_resource_slug(extension, version, filename)
                 tx_api = TransifexAPI('api', tx_api_key, tx_endpoint)
-                print("Deleting {}".format(resource_slug))
+                print('Deleting {}'.format(resource_slug))
                 try:
                     tx_api.delete_resource(tx_project, resource_slug)
                 except TransifexAPIException:
@@ -259,50 +237,44 @@ def translate(output_dir, extension, version):
         'docs': '{}/{}/docs'.format(extension, version)
     }
 
-    source_dir = os.path.join(output_dir, extension, version)
-    locale_path = os.path.join(output_dir, locale_dir)
+    source_dir = output_dir / extension / version
+    locale_path = output_dir / locale_dir
     langs = list_lang_dirs(output_dir)
     for language in langs:
         if 'en' not in language:
             # build_dir is temporary and should be deleted?
             # .. we don't need to keep the translated JSON etc around
             # unless we want to hook this up to the backups at some point
-            build_dir = os.path.join(locale_path, language, 'TRANSLATIONS', extension, version)
-            if not os.path.isdir(build_dir):
-                os.makedirs(build_dir, exist_ok=True)
+            build_dir = locale_path / language / 'TRANSLATIONS' / extension / version
+            if not build_dir.is_dir():
+                build_dir.mkdir(parents=True, exist_ok=True)
 
             # Translate codelists
-            po_path = os.path.join(
-                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['codelists']))
-            if os.path.isfile(po_path):
+            po_path = locale_path / language / 'LC_MESSAGES' / '{}.po'.format(domains['codelists'])
+            if po_path.is_file():
                 po = polib.pofile(po_path)
                 po.save_as_mofile(po_path[:-3] + '.mo')
                 translate_codelists(
                     domains['codelists'],
-                    os.path.join(source_dir, 'codelists'),
-                    os.path.join(build_dir, 'codelists'),
+                    source_dir / 'codelists',
+                    build_dir / 'codelists',
                     locale_path, language)
 
             # Translate schema
-            po_path = os.path.join(
-                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['schema']))
+            po_path = locale_path / language / 'LC_MESSAGES' / '{}.po'.format(domains['schema'])
             schema_filenames = ['record-package-schema.json', 'release-package-schema.json', 'release-schema.json']
-            filenames = [f for f in schema_filenames if os.path.isfile(os.path.join(source_dir, f))]
-            if os.path.isfile(po_path):
+            filenames = [f for f in schema_filenames if (source_dir / f).is_file()]
+            if po_path.is_file():
                 po = polib.pofile(po_path)
                 po.save_as_mofile(po_path[:-3] + '.mo')
-                translate_schema(
-                    domains['schema'], filenames, source_dir, build_dir, locale_path, language, version)
-                translate_extension(
-                    domains['schema'], source_dir, build_dir, locale_path, language)
+                translate_schema(domains['schema'], filenames, source_dir, build_dir, locale_path, language, version)
+                translate_extension(domains['schema'], source_dir, build_dir, locale_path, language)
 
-            po_path = os.path.join(
-                locale_path, language, 'LC_MESSAGES', '{}.po'.format(domains['docs']))
+            po_path = locale_path / language / 'LC_MESSAGES' / '{}.po'.format(domains['docs'])
 
-            if os.path.isfile(po_path):
+            if po_path.is_file():
                 po = polib.pofile(po_path)
                 po.save_as_mofile(po_path[:-3] + '.mo')
-                translate_docs(
-                    domains['docs'], source_dir, build_dir, locale_path, language, extension, version)
+                translate_docs(domains['docs'], source_dir, build_dir, locale_path, language, extension, version)
 
     return langs

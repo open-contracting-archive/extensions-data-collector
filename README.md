@@ -13,28 +13,23 @@ This python package will be reused by other code, such as the new extensions web
   *  Some disk space to write files to
   *  A Transifex API key with write access to the ocds-extensions project.
 
-## Config
-
-Save `.env.tmpl` as `.env` and add your Transifex API key
-
 ## To Run
 
 To run:
 
-    python cli.py
+    ocdsextensionsdatacollector output_dir/
 
-You can also just run a sample:
+For testing and development, you can limit data collection to a few extensions:
 
-    python cli.py --sample
+    ocdsextensionsdatacollector --limit 5
 
 ## Disk space
 
 The disk space used is the directory "output_dir" in the code folder.
 
-This can be changed by passing the output_directory option to the Runner class or passing the 
---outputdir argument to cli.py.
+This can be changed by changing the `output_directory` argument to the `Runner` class or by passing a different `output-dir` argument on the command-line:
 
-    python cli.py --outputdir CUSTOMout --sample
+    ocdsextensionsdatacollector another_directory/
 
 ## Output
 

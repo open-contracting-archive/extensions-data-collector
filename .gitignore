@@ -1,4 +1,3 @@
+/.coverage
 /output_dir
-__pycache__
-*.egg
-.env
+/*.egg-info
