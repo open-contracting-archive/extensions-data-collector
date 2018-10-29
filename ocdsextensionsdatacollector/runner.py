@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 from ocdsextensionregistry import ExtensionRegistry
-from ocdsextensionsdatacollector.i18n_helpers import codelists_po, schema_po, docs_po
-from ocdsextensionsdatacollector.i18n_helpers import upload_po_files, download_po_files, translate
+from ocdsextensionsdatacollector.i18n_helpers import (codelists_po, schema_po, docs_po, upload_po_files,
+                                                      download_po_files, translate)
 from ocdsextensionsdatacollector.version_data_collector import VersionDataCollector
 
 
@@ -44,16 +44,17 @@ class Runner:
                     'list_version_keys_all': [],
                 }
 
-            collector = VersionDataCollector(self.output_directory, version)
+            collector = VersionDataCollector(version)
             self.out['extensions'][version.id]['versions'][version.version] = collector.collect()
 
-        for extension_id in self.out['extensions'].keys():
+        for extension_id in self.out['extensions']:
             main_version = self._get_main_version_for_extension(extension_id)
             self._add_information_from_version_to_extension(extension_id, main_version)
             self._add_version_key_lists_to_extension(extension_id)
 
-        if self.tx_api_key is not None:
-            self._do_translations(registry)
+        # TODO Re-add later.
+        # if self.tx_api_key is not None:
+        #     self._do_translations(registry)
 
         self._write_output()
 
