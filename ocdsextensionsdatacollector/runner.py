@@ -2,16 +2,15 @@ import json
 from pathlib import Path
 
 from ocdsextensionregistry import ExtensionRegistry
+from ocdsextensionsdatacollector import EXTENSIONS_DATA, EXTENSION_VERSIONS_DATA
 from ocdsextensionsdatacollector.i18n_helpers import (codelists_po, schema_po, docs_po, upload_po_files,
                                                       download_po_files, translate)
 from ocdsextensionsdatacollector.version_data_collector import VersionDataCollector
 
 
 class Runner:
-    def __init__(self, output_directory, limit=None, tx_api_key=None,
-                 extensions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extensions.csv',  # noqa
-                 extension_versions_data='https://raw.githubusercontent.com/open-contracting/extension_registry/master/extension_versions.csv'  # noqa
-                ):
+    def __init__(self, output_directory, limit=None, tx_api_key=None, extensions_data=EXTENSIONS_DATA,
+                 extension_versions_data=EXTENSION_VERSIONS_DATA):
         self.output_directory = Path(output_directory)
         self.limit = limit
         self.tx_api_key = tx_api_key
