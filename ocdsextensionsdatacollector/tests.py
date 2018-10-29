@@ -2,7 +2,6 @@ import tempfile
 import os
 import json
 import ocdsextensionsdatacollector.runner
-import ocdsextensionregistry
 
 
 def test_write_output():
