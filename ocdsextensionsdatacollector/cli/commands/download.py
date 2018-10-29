@@ -1,5 +1,6 @@
 import shutil
 from io import BytesIO
+from collections import defaultdict
 from contextlib import closing
 from pathlib import Path
 from zipfile import ZipFile
@@ -14,17 +15,16 @@ from ocdsextensionsdatacollector.exceptions import CommandError
 
 class Command(BaseCommand):
     name = 'download'
-    help = 'downloads extensions to a local directory'
+    help = 'downloads versions of extensions to a local directory'
 
     def add_arguments(self):
         self.add_argument('output_directory',
                           help='the directory in which to write the output')
-        self.add_argument('--clobber', dest='clobber', action='store_const', const=True,
-                          help='overwrite repeated downloads')
-        self.add_argument('--no-clobber', dest='clobber', action='store_const', const=False,
-                          help='skip repeated downloads')
-        self.add_argument('--limit', type=int,
-                          help='download only this many extensions')
+        self.add_argument('versions', nargs='*',
+                          help="the versions of extensions to download (e.g. 'bids' or 'lots==master')")
+        self.add_argument('--overwrite', choices=['any', 'none', 'live'],
+                          help='overwrite any downloaded versions (any), no downloaded versions (none), or only live '
+                               'versions (live) like the master branch')
         self.add_argument('--extensions-url', default=EXTENSIONS_DATA,
                           help="the URL of the registry's extensions.csv")
         self.add_argument('--extension-versions-url', default=EXTENSION_VERSIONS_DATA,
@@ -32,18 +32,30 @@ class Command(BaseCommand):
 
     def handle(self):
         registry = ExtensionRegistry(self.args.extension_versions_url, self.args.extensions_url)
+
         output_directory = Path(self.args.output_directory)
 
+        versions = defaultdict(list)
+        for value in self.args.versions:
+            if '==' in value:
+                extension, version = value.split('==', 1)
+                versions[extension].append(version)
+            elif '=' in value:
+                # Help users with a common error.
+                raise CommandError("Couldn't parse '{}'. Use '==' not '='.".format(value))
+            else:
+                versions[value]
+
         for count, version in enumerate(registry):
-            if self.args.limit and count >= self.args.limit:
-                break
+            if versions and version.id not in versions or versions[version.id] and version.version not in versions[version.id]:
+                continue
 
             version_directory = output_directory / version.id / version.version
 
             if version_directory.is_dir():
-                if self.args.clobber:
+                if self.args.overwrite == 'any' or self.args.overwrite == 'live' and not version.date:
                     shutil.rmtree(version_directory)
-                elif self.args.clobber is False:
+                elif self.args.overwrite == 'none' or self.args.overwrite == 'live' and version.date:
                     continue
 
             try:
@@ -60,5 +72,5 @@ class Command(BaseCommand):
                             info.filename = info.filename[start:]
                             zipfile.extract(info, version_directory)
             except FileExistsError as e:
-                raise CommandError('File {} already exists! Try --clobber to overwrite or --no-clobber to skip.'
+                raise CommandError('File {} already exists! Set the --overwrite option.'
                                    .format(e.filename))
