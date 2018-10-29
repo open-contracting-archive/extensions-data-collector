@@ -15,7 +15,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     install_requires=[
-      'ocdsextensionregistry>=0.0.5',
+      # 'ocdsextensionregistry>=0.0.5',
       'polib',
       'requests',
     ],
