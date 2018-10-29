@@ -5,8 +5,9 @@ from collections import OrderedDict
 from docutils.utils import new_document
 from recommonmark.parser import CommonMarkParser
 
-from ocdsdocumentationsupport.markdown_translator import MarkdownTranslator
 from ocdsdocumentationsupport.translation import translate_codelists, translate_schema # noqa
+
+from ocdsextensionsdatacollector.markdown_translator import MarkdownTranslator
 
 
 def translate_extension(domain, sourcedir, builddir, localedir, language):
