@@ -23,34 +23,33 @@ class VersionDataCollector:
             'date': self.version.date,
             'base_url': self.version.base_url,
             'download_url': self.version.download_url,
-            'release_schema': {},  # language map
-            'record_package_schema': {},  # language map
-            'release_package_schema': {},  # language map
-            'errors': [],
-            'codelists': defaultdict(dict),  # filename: fields
-            'docs': defaultdict(dict),  # filename: language map
-            'readme': {
-                'en': self.version.remote('README.md'),
-            },
             'name': {
                 'en': self.version.metadata['name']['en'],
             },
             'description': {
                 'en': self.version.metadata['description']['en'],
             },
-            'standard_compatibility': self.version.metadata['compatibility'],
+            'compatibility': self.version.metadata['compatibility'],
+            'schemas': OrderedDict(),
+            'codelists': OrderedDict(),
+            'docs': OrderedDict(),
+            'readme': {
+                'en': self.version.remote('README.md'),
+            },
         }
 
         for name in ('record-package-schema.json', 'release-package-schema.json', 'release-schema.json'):
             if name in self.version.schemas:
-                self.out[name.replace('-', '_').replace('.json', '')] = {
+                self.out['schemas'][name] = {
                     'en': self.version.schemas[name],
                 }
+            else:
+                self.out['schemas'][name] = {}
 
         for name in sorted(self.version.codelists):
             self.out['codelists'][name] = {
-                'items': {},
                 'fieldnames': OrderedDict(),
+                'rows': {},
             }
 
             codelist = self.version.codelists[name]
@@ -59,7 +58,7 @@ class VersionDataCollector:
                     'en': fieldname,
                 }
             for row in codelist.rows:
-                self.out['codelists'][name]['items'][row['Code']] = {
+                self.out['codelists'][name]['rows'][row['Code']] = {
                     'en': OrderedDict(row),
                 }
 
