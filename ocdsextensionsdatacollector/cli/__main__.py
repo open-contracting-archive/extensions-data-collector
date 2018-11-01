@@ -1,6 +1,6 @@
 import argparse
 import importlib
-import logging.config
+import logging
 import sys
 
 from ocdsextensionsdatacollector.exceptions import CommandError
