@@ -1,4 +1,6 @@
 /.coverage
+/.tx
 /*.egg-info
+/build/locale
 /download
 /locale
