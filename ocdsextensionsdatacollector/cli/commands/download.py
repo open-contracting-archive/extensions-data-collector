@@ -1,6 +1,7 @@
+import logging
 import shutil
-from io import BytesIO
 from contextlib import closing
+from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -9,6 +10,8 @@ import requests
 from .base import BaseCommand
 from ocdsextensionsdatacollector import EXTENSIONS_DATA, EXTENSION_VERSIONS_DATA
 from ocdsextensionsdatacollector.exceptions import CommandError
+
+logger = logging.getLogger('ocdsextensionsdatacollector')
 
 
 class Command(BaseCommand):
@@ -32,6 +35,9 @@ class Command(BaseCommand):
         output_directory = Path(self.args.output_directory)
 
         for version in self.versions():
+            if not version.download_url:
+                logger.warning('No Download URL for {}=={}'.format(version.id, version.version))
+
             version_directory = output_directory / version.id / version.version
 
             if version_directory.is_dir():
@@ -49,9 +55,11 @@ class Command(BaseCommand):
                 with closing(ZipFile(BytesIO(response.content))) as zipfile:
                     infos = zipfile.infolist()
                     start = len(infos[0].filename)
-                    for info in infos:
-                        if info.filename[-1] != '/' and info.filename[start:] != '.travis.yml':
-                            info.filename = info.filename[start:]
+
+                    for info in infos[1:]:
+                        filename = info.filename[start:]
+                        if filename[-1] != '/' and filename != '.travis.yml':
+                            info.filename = filename
                             zipfile.extract(info, version_directory)
             except FileExistsError as e:
                 raise CommandError('File {} already exists! Set the --overwrite option.'

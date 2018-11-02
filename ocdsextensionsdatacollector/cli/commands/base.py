@@ -40,5 +40,5 @@ class BaseCommand:
                 versions[value]
 
         for version in registry:
-            if (not versions or version.id in versions) and (not versions[version.id] or version.version in versions[version.id]):  # noqa
+            if (not self.args.versions or version.id in versions) and (not versions[version.id] or version.version in versions[version.id]):  # noqa
                 yield version
