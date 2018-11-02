@@ -5,10 +5,11 @@ import sys
 
 from ocdsextensionsdatacollector.exceptions import CommandError
 
-logger = logging.getLogger('ocdskit')
+logger = logging.getLogger('ocdsextensionsdatacollector')
 
 COMMAND_MODULES = (
     'ocdsextensionsdatacollector.cli.commands.download',
+    'ocdsextensionsdatacollector.cli.commands.generate_pot_files',
 )
 
 
