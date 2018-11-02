@@ -1,12 +1,10 @@
 import shutil
 from io import BytesIO
-from collections import defaultdict
 from contextlib import closing
 from pathlib import Path
 from zipfile import ZipFile
 
 import requests
-from ocdsextensionregistry import ExtensionRegistry
 
 from .base import BaseCommand
 from ocdsextensionsdatacollector import EXTENSIONS_DATA, EXTENSION_VERSIONS_DATA
@@ -31,25 +29,9 @@ class Command(BaseCommand):
                           help="the URL of the registry's extension_versions.csv")
 
     def handle(self):
-        registry = ExtensionRegistry(self.args.extension_versions_url, self.args.extensions_url)
-
         output_directory = Path(self.args.output_directory)
 
-        versions = defaultdict(list)
-        for value in self.args.versions:
-            if '==' in value:
-                extension, version = value.split('==', 1)
-                versions[extension].append(version)
-            elif '=' in value:
-                # Help users with a common error.
-                raise CommandError("Couldn't parse '{}'. Use '==' not '='.".format(value))
-            else:
-                versions[value]
-
-        for count, version in enumerate(registry):
-            if versions and version.id not in versions or versions[version.id] and version.version not in versions[version.id]:
-                continue
-
+        for version in self.versions():
             version_directory = output_directory / version.id / version.version
 
             if version_directory.is_dir():
