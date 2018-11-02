@@ -27,7 +27,7 @@ class Command(BaseCommand):
     help = 'generates POT files (message catalogs) for versions of extensions'
 
     def add_arguments(self):
-        self.add_argument('locale_directory',
+        self.add_argument('output_directory',
                           help='the directory in which to write the output')
         self.add_argument('versions', nargs='*',
                           help="the versions of extensions to process (e.g. 'bids' or 'lots==master')")
@@ -39,7 +39,7 @@ class Command(BaseCommand):
                           help="the URL of the registry's extension_versions.csv")
 
     def handle(self):
-        locale_directory = Path(self.args.locale_directory)
+        output_directory = Path(self.args.output_directory)
 
         # We simulate pybabel and sphinx-build commands. Variable names are chosen to match upstream code.
 
@@ -94,7 +94,7 @@ class Command(BaseCommand):
             if not version.download_url:
                 logger.warning('No Download URL for {}=={}'.format(version.id, version.version))
 
-            outdir = locale_directory / version.id / version.version
+            outdir = output_directory / version.id / version.version
 
             outdir.mkdir(parents=True, exist_ok=True)
 
