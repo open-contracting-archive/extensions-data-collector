@@ -7,8 +7,10 @@ env:
   - BASEDIR="https://raw.githubusercontent.com/open-contracting/standard-maintenance-scripts/master"
 install:
   - curl -s -S --retry 3 $BASEDIR/tests/install.sh | bash -
-  - pip install -r requirements.in
   - pip install .[test]
+  - pip install -e git+https://github.com/rtfd/recommonmark.git@81d7c6f7b37981ac22571dd91a7cc9d24c3e66a1#egg=recommonmark
 script:
   - curl -s -S --retry 3 $BASEDIR/tests/script.sh | bash -
-  - pytest ocdsextensionsdatacollector/tests.py
+  - pytest --cov ocdsextensiondatacollector
+after_success:
+  coveralls
