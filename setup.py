@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-with open('README.md') as f:
+with open('README.rst') as f:
     long_description = f.read()
 
 setup(
@@ -13,11 +13,13 @@ setup(
     license='BSD',
     packages=find_packages(),
     long_description=long_description,
-    long_description_content_type='text/markdown',
     install_requires=[
-      # 'ocdsextensionregistry>=0.0.5',
-      'polib',
-      'requests',
+        'Babel',
+        'ocds-babel>=0.0.3',
+        'ocdsextensionregistry>=0.0.5',
+        'polib',
+        'requests',
+        'Sphinx==1.5.1',
     ],
     extras_require={
         'test': [
@@ -30,6 +32,9 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3.6',
     ],
-    entry_points='''[console_scripts]
-ocdsextensionsdatacollector = ocdsextensionsdatacollector.cli.__main__:main''',
+    entry_points={
+        'console_scripts': [
+            'ocdsextensionsdatacollector = ocdsextensionsdatacollector.cli.__main__:main',
+        ],
+    },
 )

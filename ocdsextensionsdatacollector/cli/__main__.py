@@ -1,18 +1,45 @@
 import argparse
+import importlib
+import logging
+import sys
 
-from ocdsextensionsdatacollector.runner import Runner
+from ocdsextensionsdatacollector.exceptions import CommandError
+
+logger = logging.getLogger('ocdsextensionsdatacollector')
+
+COMMAND_MODULES = (
+    'ocdsextensionsdatacollector.cli.commands.download',
+    'ocdsextensionsdatacollector.cli.commands.generate_data_file',
+    'ocdsextensionsdatacollector.cli.commands.generate_pot_files',
+)
 
 
 def main():
     parser = argparse.ArgumentParser(description='OCDS Extensions Data Collector CLI')
-    parser.add_argument('output_directory', help='the directory in which to write the output')
-    parser.add_argument('--limit', help='limit data collection to this many extensions', type=int)
-    parser.add_argument('--tx-api-key', help='your Transifex API key')
+
+    subparsers = parser.add_subparsers(dest='subcommand')
+
+    subcommands = {}
+
+    for module in COMMAND_MODULES:
+        try:
+            command = importlib.import_module(module).Command(subparsers)
+            subcommands[command.name] = command
+        except ImportError as e:
+            logger.error('exception "%s" prevented loading of %s module', e, module)
 
     args = parser.parse_args()
 
-    runner = Runner(args.output_directory, limit=args.limit, tx_api_key=args.tx_api_key)
-    runner.run()
+    if args.subcommand:
+        command = subcommands[args.subcommand]
+        try:
+            command.args = args
+            command.handle()
+        except CommandError as e:
+            logger.critical(e)
+            sys.exit(1)
+    else:
+        parser.print_help()
 
 
 if __name__ == '__main__':

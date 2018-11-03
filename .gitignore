@@ -1,3 +1,6 @@
 /.coverage
-/output_dir
+/.tx
 /*.egg-info
+/build/locale
+/locale
+/outputdir
