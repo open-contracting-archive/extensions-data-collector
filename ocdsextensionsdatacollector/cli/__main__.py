@@ -9,6 +9,7 @@ logger = logging.getLogger('ocdsextensionsdatacollector')
 
 COMMAND_MODULES = (
     'ocdsextensionsdatacollector.cli.commands.download',
+    'ocdsextensionsdatacollector.cli.commands.generate_data_file',
     'ocdsextensionsdatacollector.cli.commands.generate_pot_files',
 )
 
