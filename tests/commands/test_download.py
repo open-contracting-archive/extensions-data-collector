@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from glob import glob
@@ -61,6 +62,8 @@ def test_command_versions_collision(monkeypatch, tmpdir):
 
 
 def test_command_versions_invalid(monkeypatch, tmpdir, caplog):
+    caplog.set_level(logging.INFO)  # silence connectionpool.py DEBUG messages
+
     with pytest.raises(SystemExit) as excinfo:
         with patch('sys.stdout', new_callable=StringIO) as actual:
             monkeypatch.setattr(sys, 'argv', args + [str(tmpdir), 'location=v1.1.3'])
@@ -76,6 +79,7 @@ def test_command_versions_invalid(monkeypatch, tmpdir, caplog):
 
 # Require the user to decide what to overwrite.
 def test_command_repeated(monkeypatch, tmpdir, caplog):
+    caplog.set_level(logging.INFO)  # silence connectionpool.py DEBUG messages
     argv = args + [str(tmpdir), 'location==v1.1.3']
 
     monkeypatch.setattr(sys, 'argv', argv)
@@ -161,7 +165,7 @@ def test_command_help(monkeypatch, caplog):
             monkeypatch.setattr(sys, 'argv', ['ocdsextensionsdatacollector', '--help'])
             main()
 
-    assert actual.getvalue().startswith('usage: ocdsextensionsdatacollector [-h] ')
+    assert actual.getvalue().startswith('usage: ocdsextensionsdatacollector [-h]')
 
     assert len(caplog.records) == 0
     assert excinfo.value.code == 0
