@@ -51,8 +51,7 @@ class Command(BaseCommand):
         # sphinx-build -E -q …
         kwargs = {
             'confoverrides': {
-                'master_doc': 'README',
-                'source_suffix': '.md',
+                'source_suffix': ['.rst', '.md'],
                 'source_parsers': {
                     '.md': CommonMarkParser,
                 },
@@ -140,8 +139,12 @@ class Command(BaseCommand):
                             info.filename = filename
                             zipfile.extract(info, srcdir)
 
-                    # sphinx-build -b gettext $(DOCS_DIR) $(POT_DIR)
                     with cd(srcdir):
+                        # Eliminates a warning, without change to output.
+                        with open('contents.rst', 'w') as f:
+                            f.write('.. toctree::\n   :glob:\n\n   docs/*\n   README')
+
+                        # sphinx-build -b gettext $(DOCS_DIR) $(POT_DIR)
                         app = Sphinx('.', None, '.', '.', 'gettext', **kwargs)
                         app.build(True)
 
