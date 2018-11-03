@@ -21,8 +21,6 @@ setup(
         'polib',
         'requests',
         'Sphinx==1.5.1',
-        'sphinx-intl<1',
-        'transifex-client',
     ],
     extras_require={
         'test': [
