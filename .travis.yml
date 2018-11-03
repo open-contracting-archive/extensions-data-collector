@@ -11,6 +11,6 @@ install:
   - pip install -e git+https://github.com/rtfd/recommonmark.git@81d7c6f7b37981ac22571dd91a7cc9d24c3e66a1#egg=recommonmark
 script:
   - curl -s -S --retry 3 $BASEDIR/tests/script.sh | bash -
-  - pytest --cov ocdsextensiondatacollector
+  - pytest --cov ocdsextensionsdatacollector
 after_success:
   coveralls
